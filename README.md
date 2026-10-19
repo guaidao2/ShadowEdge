@@ -194,6 +194,10 @@ backup API.
 
 - [User manual](MANUAL.md) — installation, daily operation, admin, MCP and master/edge sync
 
+## License
+
+MIT License. See [LICENSE](LICENSE).
+
 ## Authors
 
 - guaidao2 & coolmoon

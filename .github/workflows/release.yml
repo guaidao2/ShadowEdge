@@ -116,15 +116,17 @@ jobs:
               -o "dist/shadowedge${EXT}" ./cmd/shadowedge
 
           NAME="shadowedge_${VERSION}_${TARGET_OS}_${TARGET_ARCH}"
+          cp LICENSE dist/LICENSE
           if [ "${TARGET_OS}" = "windows" ]; then
-            (cd dist && zip -q "${NAME}.zip" "shadowedge.exe")
+            (cd dist && zip -q "${NAME}.zip" "shadowedge.exe" "LICENSE")
             rm -f "dist/shadowedge.exe"
             (cd dist && sha256sum "${NAME}.zip" > "${NAME}.sha256")
           else
-            (cd dist && tar -czf "${NAME}.tar.gz" shadowedge)
+            (cd dist && tar -czf "${NAME}.tar.gz" shadowedge LICENSE)
             rm -f "dist/shadowedge"
             (cd dist && sha256sum "${NAME}.tar.gz" > "${NAME}.sha256")
           fi
+          rm -f "dist/LICENSE"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

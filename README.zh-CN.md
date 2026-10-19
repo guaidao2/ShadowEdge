@@ -172,6 +172,10 @@ curl -s http://127.0.0.1:5000/mcp \
 
 - [使用手册](MANUAL.zh-CN.md) — 安装、日常操作、管理、MCP 与主从同步
 
+## 许可证
+
+MIT License，详见 [LICENSE](LICENSE)。
+
 ## 作者
 
 - guaidao2 & coolmoon
