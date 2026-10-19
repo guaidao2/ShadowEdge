@@ -1,0 +1,156 @@
+name: release
+
+# Release policy: local commits only. Before publishing, squash every commit
+# since the previous release into one, push main, then push a v* tag. Only the
+# tag (or an explicit manual dispatch) builds and publishes a GitHub Release.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version, for example v0.1.0"
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  CGO_ENABLED: "0"
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  meta:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+      commit: ${{ steps.resolve.outputs.commit }}
+    steps:
+      - name: Resolve version
+        id: resolve
+        shell: bash
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          set -euo pipefail
+          if [ -n "${INPUT_VERSION:-}" ]; then
+            VERSION="${INPUT_VERSION}"
+          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            VERSION="${GITHUB_REF_NAME}"
+          else
+            echo "a v* tag or a version input is required" >&2
+            exit 1
+          fi
+          if [[ ! "${VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]] || [[ "${VERSION}" == *..* ]]; then
+            echo "invalid release version: ${VERSION}" >&2
+            exit 1
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "commit=${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./... -count=1
+
+  build:
+    needs: [test, meta]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Build and package
+        shell: bash
+        env:
+          VERSION: ${{ needs.meta.outputs.version }}
+          COMMIT: ${{ needs.meta.outputs.commit }}
+          TARGET_OS: ${{ matrix.goos }}
+          TARGET_ARCH: ${{ matrix.goarch }}
+        run: |
+          set -euo pipefail
+          EXT=""
+          if [ "${TARGET_OS}" = "windows" ]; then EXT=".exe"; fi
+
+          mkdir -p dist
+          GOOS="${TARGET_OS}" GOARCH="${TARGET_ARCH}" \
+            go build -trimpath \
+              -ldflags "-s -w -X shadowedge/internal/version.Version=${VERSION} -X shadowedge/internal/version.Commit=${COMMIT}" \
+              -o "dist/shadowedge${EXT}" ./cmd/shadowedge
+
+          NAME="shadowedge_${VERSION}_${TARGET_OS}_${TARGET_ARCH}"
+          if [ "${TARGET_OS}" = "windows" ]; then
+            (cd dist && zip -q "${NAME}.zip" "shadowedge.exe")
+            rm -f "dist/shadowedge.exe"
+            (cd dist && sha256sum "${NAME}.zip" > "${NAME}.sha256")
+          else
+            (cd dist && tar -czf "${NAME}.tar.gz" shadowedge)
+            rm -f "dist/shadowedge"
+            (cd dist && sha256sum "${NAME}.tar.gz" > "${NAME}.sha256")
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shadowedge-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    needs: [build, meta]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.meta.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: ShadowEdge ${{ needs.meta.outputs.version }}
+          generate_release_notes: true
+          files: dist/*
+          fail_on_unmatched_files: true

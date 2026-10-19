@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ShadowEdge</title>
+<style>
+:root{
+  --bg:#0b0f14;--panel:#111827;--panel-2:#0f172a;--border:#1f2937;--border-2:#334155;
+  --text:#e5e7eb;--muted:#94a3b8;--dim:#64748b;--accent:#22d3ee;--accent-2:#f97316;
+  --danger:#ef4444;--ok:#22c55e;--warn:#f59e0b;--radius:10px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Microsoft YaHei",sans-serif;font-size:14px;line-height:1.5}
+a{color:var(--accent);text-decoration:none}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.topbar{display:flex;align-items:center;gap:16px;padding:12px 22px;border-bottom:1px solid var(--border);background:rgba(15,23,42,.92);position:sticky;top:0;z-index:20;backdrop-filter:blur(8px)}
+.brand{font-weight:700;letter-spacing:2px;color:var(--accent);font-size:15px;text-transform:uppercase;white-space:nowrap}
+.brand span{color:var(--text);letter-spacing:1px;text-transform:none;font-weight:500;margin-left:8px;font-size:12px}
+.spacer{flex:1}
+.nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.nav a,.nav button.btn-link{color:var(--muted);font-size:12px;padding:6px 8px;border-radius:6px;border:0;background:transparent}
+.nav a:hover,.nav button.btn-link:hover{background:var(--panel);color:var(--text)}
+.container{max-width:1500px;margin:0 auto;padding:22px}
+.page-head{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.page-title{font-size:18px;font-weight:600;letter-spacing:1px;margin:0}
+.page-sub{color:var(--muted);font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+.card.click{cursor:pointer;transition:border-color .15s,transform .15s}
+.card.click:hover{border-color:var(--accent);transform:translateY(-1px)}
+.card h3{margin:0 0 6px;font-size:15px}
+.card p{margin:0;color:var(--muted);font-size:12px;min-height:32px}
+.meta{color:var(--dim);font-size:11px}
+.stats{display:flex;gap:14px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
+.stats b{color:var(--accent);font-weight:600}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border-2);background:var(--panel);color:var(--text);padding:8px 12px;border-radius:7px;font-size:12px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#07131a;font-weight:700}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{border-color:#7f1d1d;color:#fecaca;background:#1f1111}
+.btn.danger:hover{border-color:var(--danger)}
+.btn.ghost{background:transparent}
+.btn.small{padding:4px 8px;font-size:11px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+input,select,textarea{width:100%;background:var(--panel-2);border:1px solid var(--border-2);color:var(--text);border-radius:7px;padding:9px 10px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:78px}
+label{display:block;color:var(--muted);font-size:11px;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px}
+.field{margin-bottom:12px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(circle at 50% 0%,#11202b 0%,var(--bg) 60%)}
+.auth-card{width:100%;max-width:420px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.auth-card h1{margin:0 0 4px;color:var(--accent);letter-spacing:2px;font-size:22px}
+.auth-sub{color:var(--muted);font-size:12px;margin-bottom:22px}
+.auth-tabs{display:flex;gap:8px;margin-bottom:18px}
+.auth-tabs button{flex:1;background:transparent;border:1px solid var(--border);color:var(--muted);padding:8px;border-radius:7px}
+.auth-tabs button.active{border-color:var(--accent);color:var(--accent);background:rgba(34,211,238,.08)}
+.msg{font-size:12px;margin-top:12px;padding:9px 10px;border-radius:7px;display:none}
+.msg.show{display:block}
+.msg.ok{background:rgba(34,197,94,.1);color:#86efac;border:1px solid #14532d}
+.msg.err{background:rgba(239,68,68,.1);color:#fca5a5;border:1px solid #7f1d1d}
+.tabs{display:flex;gap:4px;margin:0 0 16px;border-bottom:1px solid var(--border);overflow-x:auto}
+.tabs button{background:transparent;border:0;border-bottom:2px solid transparent;color:var(--muted);padding:10px 12px;font-size:12px;white-space:nowrap}
+.tabs button.active{color:var(--accent);border-bottom-color:var(--accent)}
+.board{display:flex;gap:10px;overflow-x:auto;padding-bottom:12px;align-items:flex-start}
+.board-col{min-width:230px;max-width:260px;flex:0 0 240px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px}
+.board-head{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;margin-bottom:9px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.count{margin-left:auto;color:var(--dim);font-size:11px}
+.entity-card{background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:9px;margin-bottom:8px;cursor:pointer}
+.entity-card:hover{border-color:var(--accent)}
+.entity-card .t{font-size:12px;font-weight:600;margin-bottom:5px;word-break:break-word}
+.kv{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.kv-row{display:grid;grid-template-columns:150px 1fr;border-bottom:1px solid var(--border)}
+.kv-row:last-child{border-bottom:0}
+.kv-label{background:var(--panel-2);padding:7px 10px;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+.kv-value{padding:7px 10px;font-size:12px;word-break:break-word}
+.kv-value pre{margin:2px 0;padding:6px}
+@media(max-width:600px){.kv-row{grid-template-columns:1fr}.kv-label{border-bottom:1px solid var(--border)}}
+.badges{display:flex;gap:4px;flex-wrap:wrap}
+.badge{font-size:9px;text-transform:uppercase;letter-spacing:.6px;padding:2px 6px;border-radius:99px;background:var(--panel);border:1px solid var(--border-2);color:var(--muted)}
+.badge.k-target{color:#93c5fd;border-color:#1e40af}
+.badge.k-service{color:#c4b5fd;border-color:#5b21b6}
+.badge.k-finding{color:#fca5a5;border-color:#991b1b}
+.badge.k-credential{color:#fcd34d;border-color:#92400e}
+.badge.k-evidence{color:#6ee7b7;border-color:#065f46}
+.badge.k-command{color:#67e8f9;border-color:#155e75}
+.badge.k-task{color:#cbd5e1;border-color:#475569}
+.badge.k-note{color:#86efac;border-color:#166534}
+.badge.k-action{color:#fdba74;border-color:#9a3412}
+.badge.s-new{color:#93c5fd}.badge.s-confirmed{color:#67e8f9}.badge.s-exploited{color:#fca5a5}.badge.s-fixed{color:#86efac}.badge.s-false_positive{color:#94a3b8}
+.empty{color:var(--dim);font-size:12px;padding:18px;text-align:center}
+.graph{height:620px;background:var(--panel);border:1px solid var(--border);border-radius:10px}
+.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:9px 10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;background:var(--panel-2);position:sticky;top:0}
+tr:last-child td{border-bottom:0}
+tr:hover td{background:rgba(34,211,238,.03)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.filters input,.filters select{max-width:180px}
+.modal-root{position:relative;z-index:50}
+.modal-backdrop{position:fixed;inset:0;background:rgba(2,6,12,.75);display:flex;align-items:flex-start;justify-content:center;padding:38px 16px;overflow:auto}
+.modal{width:100%;max-width:720px;background:var(--panel);border:1px solid var(--border-2);border-radius:12px;padding:20px;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.modal h3{margin:0 0 4px;font-size:16px;color:var(--accent)}
+.modal .sub{color:var(--muted);font-size:12px;margin-bottom:16px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+pre{background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:10px;overflow:auto;font-size:11px;color:#cbd5e1;white-space:pre-wrap;word-break:break-word}
+.toast{position:fixed;right:18px;bottom:18px;max-width:420px;background:var(--panel);border:1px solid var(--border-2);border-left:3px solid var(--accent);border-radius:8px;padding:10px 13px;font-size:12px;box-shadow:0 10px 40px rgba(0,0,0,.4);z-index:100;transition:opacity .2s}
+.toast.err{border-left-color:var(--danger)}
+.toast.ok{border-left-color:var(--ok)}
+.muted{color:var(--muted)}
+.dim{color:var(--dim)}
+.mt{margin-top:14px}
+.nowrap{white-space:nowrap}
+.list-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
+.list-row:last-child{border-bottom:0}
+.wrap{display:flex;gap:16px;align-items:flex-start}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.row,.row3,.split{grid-template-columns:1fr}.board-col{flex:0 0 85vw}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal-root"></div>
+<script src="/vendor/vis-network.min.js"></script>
+<script>
+(() => {
+'use strict';
+
+/* ============================== i18n ============================== */
+const I18N = {
+  en: {
+    app:'ShadowEdge', tagline:'Collaborative red team operations',
+    login:'Login', register:'Request access', sign_in:'Sign in', sign_up:'Submit request',
+    username:'Username', password:'Password', confirm_password:'Confirm password', display_name:'Display name', email:'Email', reason:'Reason',
+    auth_note:'Accounts require administrator approval.', pending_ok:'Request submitted. An administrator must approve it before you can sign in.',
+    logout:'Logout', projects:'Projects', new_project:'New project', project_name:'Project name', description:'Description', create:'Create', cancel:'Cancel',
+    no_projects:'No projects yet. Create one to begin.', open:'Open', board:'Phase board', graph:'DAG', entities:'Entities', members:'Members',
+    reports:'Reports', admin:'Admin', add_entity:'Add entity', add_member:'Add member', remove:'Remove', save:'Save', delete:'Delete', edit:'Edit',
+    link:'Link', link_to:'Link to', label:'Label', details:'Details', data:'Data', status:'Status', phase:'Phase', title:'Title', kind:'Kind',
+    filter_kind:'All kinds', filter_status:'All statuses', filter_phase:'All phases', search:'Search title or data', all:'All',
+    role:'Role', owner:'Owner', operator:'Operator', viewer:'Viewer', auditor:'Auditor',
+    registrations:'Registration requests', users:'Users', tokens:'API tokens', approve:'Approve', reject:'Reject',
+    create_token:'Create token', revoke:'Revoke', scopes:'Scopes', project:'Project', token_once:'Copy this token now. It will not be shown again.',
+    report_html:'Open HTML report', report_md:'Download Markdown', no_entities:'No entities in this view.', no_data:'No data yet.',
+    loading:'Loading...', error:'Something went wrong', welcome:'Signed in as', show:'Show', hide:'Hide',
+    confirm_delete:'Delete this item?', confirm_remove:'Remove this member?', confirm_revoke:'Revoke this token?',
+    saved:'Saved', deleted:'Deleted', added:'Added', removed:'Removed', langed:'Language updated',
+    kind_target:'Target', kind_service:'Service', kind_finding:'Finding', kind_credential:'Credential',
+    kind_evidence:'Evidence', kind_command:'Command', kind_task:'Task', kind_note:'Note', kind_action:'Action',
+    status_new:'New', status_confirmed:'Confirmed', status_exploited:'Exploited', status_fixed:'Fixed', status_false_positive:'False positive',
+    role_owner:'Owner', role_operator:'Operator', role_viewer:'Viewer', role_auditor:'Auditor',
+    phase_count:'entities', target:'Target', ip:'IP / hostname', hostname:'Hostname', os:'OS', tags:'Tags', port:'Port', protocol:'Protocol',
+    service:'Service', product:'Product', version:'Version', severity:'Severity', cve:'CVE', cvss:'CVSS', evidence:'Evidence',
+    secret:'Secret', source:'Source', filename:'Filename', sha256:'SHA-256', storage_path:'Storage path', size:'Size',
+    command:'Command', output:'Output', exit_code:'Exit code', assignee:'Assignee', text:'Text', actions:'Actions',
+    confirm:'Confirm', close:'Close', project_created:'Project created', entity_created:'Entity created', member_created:'Member added',
+    token_created:'Token created', token_revoked:'Token revoked', user_updated:'User updated', registration_reviewed:'Request reviewed',
+    no_projects_hint:'Create a project, then record targets, services, findings, credentials, evidence and commands.',
+    sync:'Sync', sync_mode:'Mode', sync_master:'Master', sync_last_seq:'Last sequence',
+    sync_pending:'Pending operations', sync_conflicts:'Conflicts',
+    sync_role:'Sync role', sync_remote_project:'Remote project', sync_token:'Sync token',
+    sync_token_keep:'Leave blank to keep the stored token', sync_save:'Save sync settings',
+    sync_force:'Force sync', sync_saved:'Sync settings saved', sync_force_ok:'Sync completed',
+    sync_hint:'Set this project as standalone, master, or an edge replica of a master project.',
+    sync_repoint_confirm:'Changing the master or remote project replaces local entities with the new master snapshot. Continue?',
+    sync_edge_admin_only:'Edge configuration is restricted to platform administrators.',
+    mode_standalone:'Standalone', mode_master:'Master', mode_edge:'Edge', refresh:'Refresh',
+    token_name:'Token name', status_active:'Active', status_disabled:'Disabled', enable:'Enable', disable:'Disable',
+    graph_hint:'Click a node to open its details. Create links from an entity detail dialog.',
+    report_hint:'Reports include the executive summary, phase coverage, entity details and the DAG attack chain.',
+    advanced_json:'Advanced JSON', no_members:'No members yet.',
+    change_password:'Change password', current_password:'Current password', new_password:'New password',
+    password_changed:'Password updated', password_mismatch:'Passwords do not match', password_incorrect:'Current password is incorrect',
+  },
+  'zh-CN': {
+    app:'ShadowEdge', tagline:'红队协同作战平台',
+    login:'登录', register:'申请注册', sign_in:'登录', sign_up:'提交申请',
+    username:'用户名', password:'密码', confirm_password:'确认密码', display_name:'显示名', email:'邮箱', reason:'申请理由',
+    auth_note:'账号需要管理员审批后才能使用。', pending_ok:'申请已提交，管理员审批通过后才能登录。',
+    logout:'退出', projects:'项目', new_project:'新建项目', project_name:'项目名称', description:'描述', create:'创建', cancel:'取消',
+    no_projects:'暂无项目，先创建一个。', open:'打开', board:'阶段作战板', graph:'DAG 攻击图', entities:'实体', members:'成员',
+    reports:'报告', admin:'管理', add_entity:'添加实体', add_member:'添加成员', remove:'移除', save:'保存', delete:'删除', edit:'编辑',
+    link:'连线', link_to:'连接到', label:'说明', details:'详情', data:'数据', status:'状态', phase:'阶段', title:'标题', kind:'类型',
+    filter_kind:'全部类型', filter_status:'全部状态', filter_phase:'全部阶段', search:'搜索标题或数据', all:'全部',
+    role:'角色', owner:'所有者', operator:'操作员', viewer:'只读', auditor:'审计',
+    registrations:'注册申请', users:'用户', tokens:'API Token', approve:'批准', reject:'拒绝',
+    create_token:'创建 Token', revoke:'撤销', scopes:'权限范围', project:'项目', token_once:'请现在复制 Token，之后不会再次显示。',
+    report_html:'打开 HTML 报告', report_md:'下载 Markdown', no_entities:'当前视图没有实体。', no_data:'暂无数据。',
+    loading:'加载中...', error:'操作失败', welcome:'当前用户', show:'展开', hide:'收起',
+    confirm_delete:'确认删除？', confirm_remove:'确认移除该成员？', confirm_revoke:'确认撤销该 Token？',
+    saved:'已保存', deleted:'已删除', added:'已添加', removed:'已移除', langed:'语言已更新',
+    kind_target:'目标', kind_service:'服务', kind_finding:'漏洞', kind_credential:'凭据',
+    kind_evidence:'证据', kind_command:'命令', kind_task:'任务', kind_note:'备注', kind_action:'行动',
+    status_new:'新发现', status_confirmed:'已确认', status_exploited:'已利用', status_fixed:'已修复', status_false_positive:'误报',
+    role_owner:'所有者', role_operator:'操作员', role_viewer:'只读', role_auditor:'审计',
+    phase_count:'个实体', target:'目标', ip:'IP / 主机名', hostname:'主机名', os:'操作系统', tags:'标签', port:'端口', protocol:'协议',
+    service:'服务名', product:'产品', version:'版本', severity:'严重性', cve:'CVE', cvss:'CVSS', evidence:'证据',
+    secret:'口令/哈希', source:'来源', filename:'文件名', sha256:'SHA-256', storage_path:'存储路径', size:'大小',
+    command:'命令', output:'输出', exit_code:'退出码', assignee:'负责人', text:'内容', actions:'操作',
+    confirm:'确认', close:'关闭', project_created:'项目已创建', entity_created:'实体已创建', member_created:'成员已添加',
+    token_created:'Token 已创建', token_revoked:'Token 已撤销', user_updated:'用户已更新', registration_reviewed:'申请已处理',
+    no_projects_hint:'创建项目后，可以记录目标、服务、漏洞、凭据、证据和命令。',
+    sync:'同步', sync_mode:'模式', sync_master:'主节点', sync_last_seq:'最后序号',
+    sync_pending:'待推送操作', sync_conflicts:'冲突',
+    sync_role:'同步角色', sync_remote_project:'远端项目', sync_token:'同步 Token',
+    sync_token_keep:'留空则保留已保存的 Token', sync_save:'保存同步设置',
+    sync_force:'立即同步', sync_saved:'同步设置已保存', sync_force_ok:'同步完成',
+    sync_hint:'将本项目设置为单机、主节点，或某个主节点项目的边缘副本。',
+    sync_repoint_confirm:'切换 master 或远端项目会用新 master 快照替换本地实体。继续？',
+    sync_edge_admin_only:'edge 配置仅限平台管理员。',
+    mode_standalone:'单机', mode_master:'主节点', mode_edge:'边缘节点', refresh:'刷新',
+    token_name:'Token 名称', status_active:'启用', status_disabled:'禁用', enable:'启用', disable:'禁用',
+    graph_hint:'点击节点查看详情；在实体详情中创建连线。',
+    report_hint:'报告包含执行摘要、阶段覆盖、实体详情和 DAG 攻击链。',
+    advanced_json:'高级 JSON', no_members:'暂无成员。',
+    change_password:'修改密码', current_password:'当前密码', new_password:'新密码',
+    password_changed:'密码已更新', password_mismatch:'两次密码不一致', password_incorrect:'当前密码错误',
+  }
+};
+
+/* ============================== state ============================== */
+const state = {
+  user:null, locale:localStorage.getItem('shadowedge_locale') || 'en',
+  projects:[], project:null, members:[], role:null, board:[], phases:[], entities:[], graph:null,
+  admin:{registrations:[],users:[],tokens:[]}, editingEntity:null, network:null,
+  stream:null, streamProject:null, refreshTimer:null, pendingRefresh:false,
+  streamTimer:null, streamBackoff:2000, syncConfig:null, streamTimerProject:null,
+  entityFilters:{search:'',kind:'',status:'',phase:''}
+};
+const app = document.getElementById('app');
+const modalRoot = document.getElementById('modal-root');
+
+function t(key){ return (I18N[state.locale] && I18N[state.locale][key]) || I18N.en[key] || key; }
+function phaseName(p){ return state.locale === 'zh-CN' ? p.name_zh : p.name_en; }
+function kindLabel(k){ return t('kind_'+k); }
+function statusLabel(s){ return t('status_'+s); }
+function roleLabel(r){ return t('role_'+r); }
+function esc(v){
+  return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fmtDate(s){ if(!s) return ''; const d=new Date(s); return isNaN(d) ? s : d.toLocaleString(); }
+function kindColor(k){
+  return ({target:'#60a5fa',service:'#a78bfa',finding:'#f87171',credential:'#fbbf24',evidence:'#34d399',command:'#22d3ee',task:'#cbd5e1',note:'#86efac',action:'#fb923c'})[k] || '#94a3b8';
+}
+
+const DATA_LABELS = {
+  ip:'ip', hostname:'hostname', os:'os', tags:'tags', target_id:'target',
+  port:'port', protocol:'protocol', name:'service', product:'product', version:'version',
+  severity:'severity', cve:'cve', cvss:'cvss', description:'description', evidence:'evidence',
+  username:'username', secret:'secret', source:'source',
+  filename:'filename', sha256:'sha256', storage_path:'storage_path', size:'size',
+  command:'command', output:'output', exit_code:'exit_code',
+  assignee:'assignee', due_at:'due_at', done_at:'done_at', text:'text'
+};
+
+function dataEntries(kind, data){
+  const obj = data || {};
+  const order = (KIND_FIELDS[kind] || []).map(([key]) => key);
+  const keys = Object.keys(obj);
+  const ordered = order.filter(key => keys.includes(key))
+    .concat(keys.filter(key => !order.includes(key)));
+  return ordered.map(key => ({
+    key,
+    label: DATA_LABELS[key] ? t(DATA_LABELS[key]) : key,
+    value: obj[key]
+  }));
+}
+
+function dataValue(key, value){
+  if (value === null || value === undefined || value === '') return '<span class="dim">—</span>';
+  if (key === 'target_id'){
+    const target = state.entities.find(e => e.id === value);
+    return esc(target ? target.title : value);
+  }
+  if (key === 'command' || key === 'output') return `<pre>${esc(value)}</pre>`;
+  if (typeof value === 'object') {
+    if (Array.isArray(value)) return esc(value.join(', '));
+    return esc(Object.entries(value).map(([k, v]) => `${k}: ${v}`).join(' · '));
+  }
+  return esc(String(value));
+}
+
+function renderDataFields(kind, data){
+  const entries = dataEntries(kind, data);
+  if (!entries.length) return `<div class="empty">${esc(t('no_data'))}</div>`;
+  return `<div class="kv">${entries.map(({key,label,value}) =>
+    `<div class="kv-row"><div class="kv-label">${esc(label)}</div><div class="kv-value">${dataValue(key,value)}</div></div>`
+  ).join('')}</div>`;
+}
+
+function dataSummary(kind, data){
+  const d = data || {};
+  switch (kind){
+    case 'target': return [d.ip, d.os].filter(Boolean).join(' · ') || '—';
+    case 'service': return [d.port ? `${d.port}/${d.protocol || 'tcp'}` : '', d.name || d.product].filter(Boolean).join(' · ') || '—';
+    case 'finding': return [d.severity, d.cve].filter(Boolean).join(' · ') || '—';
+    case 'credential': return [d.protocol, d.username].filter(Boolean).join(' · ') || '—';
+    case 'command': return (d.command || '').split('\n')[0].slice(0, 70) || '—';
+    case 'evidence': return d.filename || '—';
+    case 'task': case 'note': case 'action': return (d.text || '').slice(0, 70) || '—';
+    default: return '—';
+  }
+}
+
+/* ============================== API ============================== */
+function cookie(name){
+  const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.*+?^${}()|[\]\\])/g,'\\$1') + '=([^;]*)'));
+  return m ? decodeURIComponent(m[1]) : '';
+}
+async function api(path, options={}){
+  const method = options.method || 'GET';
+  const headers = Object.assign({'X-ShadowEdge':'1'}, options.headers || {});
+  if (options.body !== undefined){ headers['Content-Type']='application/json'; }
+  const csrf = cookie('shadowedge_csrf');
+  if (csrf && method !== 'GET' && method !== 'HEAD'){ headers['X-ShadowEdge-CSRF']=csrf; }
+  const resp = await fetch('/api/v1' + path, {
+    method, headers, credentials:'same-origin',
+    body: options.body === undefined ? undefined : JSON.stringify(options.body)
+  });
+  let payload = null;
+  if (resp.status !== 204){ try { payload = await resp.json(); } catch(e){} }
+  if (resp.status === 401){
+    state.user = null;
+    if (location.hash !== '#/login') location.hash = '#/login';
+    throw new Error(t('error'));
+  }
+  if (!resp.ok){ throw new Error(payload && payload.error ? payload.error.message : ('HTTP ' + resp.status)); }
+  return payload ? payload.data : null;
+}
+
+/* ============================== shell helpers ============================== */
+function topbar(projectName){
+  const adminLink = state.user && state.user.is_platform_admin
+    ? `<button class="btn-link" data-action="nav" data-href="#/admin">${esc(t('admin'))}</button>` : '';
+  return `<header class="topbar">
+    <a class="brand" href="#/projects" data-action="nav" data-href="#/projects">ShadowEdge${projectName ? `<span>${esc(projectName)}</span>` : ''}</a>
+    <div class="spacer"></div>
+    <nav class="nav">
+      ${state.user ? `<span class="meta">${esc(t('welcome'))}: ${esc(state.user.display_name || state.user.username)}</span>` : ''}
+      ${adminLink}
+      <button class="btn-link" data-action="lang" data-lang="en">EN</button>
+      <button class="btn-link" data-action="lang" data-lang="zh-CN">中文</button>
+      ${state.user ? `<button class="btn-link" data-action="change-password">${esc(t('change_password'))}</button>` : ''}
+      ${state.user ? `<button class="btn-link" data-action="logout">${esc(t('logout'))}</button>` : ''}
+    </nav>
+  </header>`;
+}
+function toast(message, kind='ok'){
+  const el = document.createElement('div');
+  el.className = 'toast ' + kind;
+  el.textContent = message;
+  document.body.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 250); }, 3200);
+}
+function openModal(html){
+  modalRoot.innerHTML = `<div class="modal-backdrop" data-backdrop="1"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`;
+}
+function closeModal(){ modalRoot.innerHTML = ''; if (state.pendingRefresh){ state.pendingRefresh = false; scheduleRefresh(); } }
+function setBusy(button, busy, label){
+  if (!button) return;
+  button.disabled = busy;
+  if (label) button.textContent = busy ? '…' : label;
+}
+
+/* ============================== auth ============================== */
+function renderAuth(mode){
+  const loginActive = mode !== 'register';
+  app.innerHTML = `<div class="auth-wrap"><div class="auth-card">
+    <h1>ShadowEdge</h1>
+    <div class="auth-sub">${esc(t('tagline'))}</div>
+    <div class="auth-tabs">
+      <button data-action="nav" data-href="#/login" class="${loginActive?'active':''}">${esc(t('login'))}</button>
+      <button data-action="nav" data-href="#/register" class="${!loginActive?'active':''}">${esc(t('register'))}</button>
+    </div>
+    ${loginActive ? `
+      <form data-form="login">
+        <div class="field"><label>${esc(t('username'))}</label><input name="username" autocomplete="username" required></div>
+        <div class="field"><label>${esc(t('password'))}</label><input name="password" type="password" autocomplete="current-password" required></div>
+        <button class="btn primary" type="submit" style="width:100%">${esc(t('sign_in'))}</button>
+      </form>
+      <div class="meta mt" style="text-align:center">${esc(t('auth_note'))}</div>
+    ` : `
+      <form data-form="register">
+        <div class="row"><div class="field"><label>${esc(t('username'))}</label><input name="username" required maxlength="32"></div>
+        <div class="field"><label>${esc(t('display_name'))}</label><input name="display_name" maxlength="80"></div></div>
+        <div class="field"><label>${esc(t('email'))}</label><input name="email" type="email" maxlength="120"></div>
+        <div class="row"><div class="field"><label>${esc(t('password'))}</label><input name="password" type="password" minlength="8" required></div>
+        <div class="field"><label>${esc(t('confirm_password'))}</label><input name="confirm_password" type="password" minlength="8" required></div></div>
+        <div class="field"><label>${esc(t('reason'))}</label><textarea name="reason" maxlength="500"></textarea></div>
+        <button class="btn primary" type="submit" style="width:100%">${esc(t('sign_up'))}</button>
+        <div class="meta mt" style="text-align:center">${esc(t('auth_note'))}</div>
+      </form>
+    `}
+    <div class="msg" id="auth-msg"></div>
+    <div class="mt" style="text-align:center;display:flex;gap:8px;justify-content:center">
+      <button class="btn small" data-action="lang" data-lang="en">EN</button>
+      <button class="btn small" data-action="lang" data-lang="zh-CN">中文</button>
+    </div>
+  </div></div>`;
+}
+
+/* ============================== projects ============================== */
+async function renderProjects(){
+  const data = await api('/projects');
+  state.projects = data.projects || [];
+  app.innerHTML = topbar() + `<div class="container">
+    <div class="page-head">
+      <h1 class="page-title">${esc(t('projects'))}</h1>
+      <div class="spacer"></div>
+      <button class="btn primary" data-action="new-project">+ ${esc(t('new_project'))}</button>
+    </div>
+    ${state.projects.length ? `<div class="grid">${state.projects.map(p => `
+      <div class="card click" data-action="open-project" data-id="${esc(p.id)}">
+        <h3>${esc(p.name)}</h3>
+        <p>${esc(p.description || t('no_data'))}</p>
+        <div class="stats"><span><b>${p.stats?.targets||0}</b> ${esc(t('target'))}</span><span><b>${p.stats?.entities||0}</b> ${esc(t('entities'))}</span><span><b>${p.stats?.findings||0}</b> ${esc(t('kind_finding'))}</span></div>
+      </div>`).join('')}</div>` : `<div class="card empty">${esc(t('no_projects'))}<div class="meta mt">${esc(t('no_projects_hint'))}</div></div>`}
+  </div>`;
+}
+
+function showNewProject(){
+  openModal(`<h3>${esc(t('new_project'))}</h3><div class="sub">${esc(t('no_projects_hint'))}</div>
+    <form data-form="create-project">
+      <div class="field"><label>${esc(t('project_name'))}</label><input name="name" required maxlength="120"></div>
+      <div class="field"><label>${esc(t('description'))}</label><textarea name="description" maxlength="1000"></textarea></div>
+      <div class="modal-actions"><button type="button" class="btn" data-action="close-modal">${esc(t('cancel'))}</button><button class="btn primary" type="submit">${esc(t('create'))}</button></div>
+    </form>`);
+}
+
+/* ============================== project workspace ============================== */
+async function loadProject(id){
+  const changed = !state.project || state.project.id !== id;
+  const data = await api('/projects/' + encodeURIComponent(id));
+  state.project = data.project;
+  state.members = data.members || [];
+  state.role = data.role;
+  if (changed) state.entityFilters = {search:'',kind:'',status:'',phase:''};
+  const phases = await api('/projects/' + encodeURIComponent(id) + '/phases');
+  state.phases = phases.phases || [];
+  const entities = await api('/projects/' + encodeURIComponent(id) + '/entities');
+  state.entities = entities.entities || [];
+}
+async function renderProject(id, tab){
+  await loadProject(id);
+  if (state.streamProject !== id) {
+    if (state.streamTimer && state.streamTimerProject !== id) {
+      clearTimeout(state.streamTimer);
+      state.streamTimer = null;
+      state.streamTimerProject = null;
+    }
+    if (!state.streamTimer) openStream(id);
+  }
+  if (!['board','graph','entities','members','reports','sync'].includes(tab)) tab = 'board';
+  app.innerHTML = topbar(state.project.name) + `<div class="container">
+    <div class="page-head">
+      <h1 class="page-title">${esc(state.project.name)}</h1>
+      <span class="badge">${esc(roleLabel(state.role))}</span>
+      <span class="meta">${esc(state.project.description || '')}</span>
+      <div class="spacer"></div>
+      <button class="btn primary" data-action="add-entity">+ ${esc(t('add_entity'))}</button>
+    </div>
+    <div class="tabs">
+      ${tabButton(id,'board',t('board'),tab)}
+      ${tabButton(id,'graph',t('graph'),tab)}
+      ${tabButton(id,'entities',t('entities'),tab)}
+      ${tabButton(id,'members',t('members'),tab)}
+      ${tabButton(id,'reports',t('reports'),tab)}
+      ${tabButton(id,'sync',t('sync'),tab)}
+    </div>
+    <div id="project-view"></div>
+  </div>`;
+  const view = document.getElementById('project-view');
+  if (tab === 'board') await renderBoard(view, id);
+  else if (tab === 'graph') await renderGraph(view, id);
+  else if (tab === 'entities') renderEntities(view, id);
+  else if (tab === 'members') renderMembers(view, id);
+  else if (tab === 'reports') renderReports(view, id);
+  else await renderSync(view, id);
+}
+function tabButton(projectId, key, label, current){
+  return `<button data-action="nav" data-href="#/project/${esc(projectId)}/${key}" class="${current===key?'active':''}">${esc(label)}</button>`;
+}
+async function renderBoard(view, id){
+  const data = await api('/projects/' + encodeURIComponent(id) + '/board');
+  state.board = data.columns || [];
+  view.innerHTML = `<div class="board">${state.board.map(col => {
+    const items = col.entities || [];
+    return `
+    <section class="board-col">
+      <div class="board-head"><span class="dot" style="background:${esc(col.phase.color)}"></span>${esc(phaseName(col.phase))}<span class="count">${items.length}</span></div>
+      ${items.map(e => `
+        <div class="entity-card" data-action="open-entity" data-id="${esc(e.id)}">
+          <div class="t">${esc(e.title)}</div>
+          <div class="badges"><span class="badge k-${esc(e.kind)}">${esc(kindLabel(e.kind))}</span><span class="badge s-${esc(e.status)}">${esc(statusLabel(e.status))}</span></div>
+          <div class="meta" style="margin-top:5px">${esc(dataSummary(e.kind,e.data))}</div>
+        </div>`).join('') || `<div class="empty">${esc(t('no_entities'))}</div>`}
+    </section>`;
+  }).join('')}</div>`;
+}
+
+function renderEntities(view, id){
+  const kinds = ['target','service','finding','credential','evidence','command','task','note','action'];
+  const filters = state.entityFilters || (state.entityFilters = {search:'',kind:'',status:'',phase:''});
+  view.innerHTML = `<div class="filters">
+    <input id="entity-search" value="${esc(filters.search)}" placeholder="${esc(t('search'))}">
+    <select id="entity-kind"><option value="">${esc(t('filter_kind'))}</option>${kinds.map(k=>`<option value="${k}" ${filters.kind===k?'selected':''}>${esc(kindLabel(k))}</option>`).join('')}</select>
+    <select id="entity-status"><option value="">${esc(t('filter_status'))}</option>${['new','confirmed','exploited','fixed','false_positive'].map(s=>`<option value="${s}" ${filters.status===s?'selected':''}>${esc(statusLabel(s))}</option>`).join('')}</select>
+    <select id="entity-phase"><option value="">${esc(t('filter_phase'))}</option>${state.phases.map(p=>`<option value="${esc(p.key)}" ${filters.phase===p.key?'selected':''}>${esc(phaseName(p))}</option>`).join('')}</select>
+  </div>
+  <div class="table-wrap"><table><thead><tr><th>${esc(t('title'))}</th><th>${esc(t('kind'))}</th><th>${esc(t('phase'))}</th><th>${esc(t('status'))}</th><th>${esc(t('details'))}</th><th></th></tr></thead><tbody id="entity-rows"></tbody></table></div>`;
+  const renderRows = () => {
+    filters.search = document.getElementById('entity-search').value;
+    filters.kind = document.getElementById('entity-kind').value;
+    filters.status = document.getElementById('entity-status').value;
+    filters.phase = document.getElementById('entity-phase').value;
+    const q = filters.search.toLowerCase();
+    const rows = state.entities.filter(e =>
+      (!filters.kind || e.kind === filters.kind) && (!filters.status || e.status === filters.status) && (!filters.phase || e.phase === filters.phase) &&
+      (!q || (e.title + ' ' + JSON.stringify(e.data || {})).toLowerCase().includes(q)));
+    document.getElementById('entity-rows').innerHTML = rows.map(e => `
+      <tr>
+        <td><a href="#" data-action="open-entity" data-id="${esc(e.id)}">${esc(e.title)}</a></td>
+        <td><span class="badge k-${esc(e.kind)}">${esc(kindLabel(e.kind))}</span></td>
+        <td>${esc(phaseName(state.phases.find(p=>p.key===e.phase) || {name_en:e.phase,name_zh:e.phase}))}</td>
+        <td><span class="badge s-${esc(e.status)}">${esc(statusLabel(e.status))}</span></td>
+        <td>${esc(dataSummary(e.kind,e.data))}</td>
+        <td class="nowrap"><button class="btn small" data-action="open-entity" data-id="${esc(e.id)}">${esc(t('edit'))}</button></td>
+      </tr>`).join('') || `<tr><td colspan="6" class="empty">${esc(t('no_entities'))}</td></tr>`;
+  };
+  renderRows();
+  ['entity-search','entity-kind','entity-status','entity-phase'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', renderRows);
+  });
+}
+
+function renderMembers(view, id){
+  const canManage = state.role === 'owner' || state.user.is_platform_admin;
+  view.innerHTML = `<div class="split">
+    <div class="card"><h3>${esc(t('members'))}</h3>
+      ${state.members.map(m => `<div class="list-row"><span>${esc(m.display_name || m.username)} <span class="meta">@${esc(m.username)}</span></span><span class="badge">${esc(roleLabel(m.role))}</span>${canManage && m.role !== 'owner' ? `<button class="btn small danger" data-action="remove-member" data-uid="${esc(m.user_id)}">${esc(t('remove'))}</button>` : ''}</div>`).join('') || `<div class="empty">${esc(t('no_data'))}</div>`}
+    </div>
+    ${canManage ? `<div class="card"><h3>${esc(t('add_member'))}</h3>
+      <form data-form="add-member">
+        <div class="field"><label>${esc(t('username'))}</label><input name="username" required></div>
+        <div class="field"><label>${esc(t('role'))}</label><select name="role"><option value="operator">${esc(t('role_operator'))}</option><option value="viewer">${esc(t('role_viewer'))}</option><option value="auditor">${esc(t('role_auditor'))}</option></select></div>
+        <button class="btn primary" type="submit">${esc(t('add_member'))}</button>
+      </form></div>` : ''}
+  </div>`;
+}
+
+async function renderSync(view, id){
+  const cfg = await api('/projects/' + encodeURIComponent(id) + '/sync/config');
+  state.syncConfig = cfg;
+  const role = cfg.role || 'standalone';
+  const modeLabel = t('mode_' + role) || role;
+  const conflicts = Number(cfg.conflicts || 0);
+  const canManage = state.role === 'owner' || state.user.is_platform_admin;
+  const canEdge = state.user.is_platform_admin;
+  const edge = role === 'edge';
+  view.innerHTML = `<div class="split">
+    <div class="card">
+      <h3>${esc(t('sync'))}</h3>
+      <div class="kv">
+        <div class="kv-row"><div class="kv-label">${esc(t('sync_mode'))}</div><div class="kv-value">${esc(modeLabel)}</div></div>
+        ${cfg.master_url ? `<div class="kv-row"><div class="kv-label">${esc(t('sync_master'))}</div><div class="kv-value">${esc(cfg.master_url)}</div></div>` : ''}
+        ${cfg.remote_project_id ? `<div class="kv-row"><div class="kv-label">${esc(t('sync_remote_project'))}</div><div class="kv-value">${esc(cfg.remote_project_id)}</div></div>` : ''}
+        ${edge ? `<div class="kv-row"><div class="kv-label">${esc(t('sync_token'))}</div><div class="kv-value">${cfg.has_token ? esc(t('saved')) : '—'}</div></div>` : ''}
+        <div class="kv-row"><div class="kv-label">${esc(t('sync_last_seq'))}</div><div class="kv-value">${Number(cfg.last_seq || 0)}</div></div>
+        <div class="kv-row"><div class="kv-label">${esc(t('sync_pending'))}</div><div class="kv-value">${Number(cfg.pending_events || 0)}</div></div>
+        <div class="kv-row"><div class="kv-label">${esc(t('sync_conflicts'))}</div><div class="kv-value" style="${conflicts > 0 ? 'color:var(--danger)' : ''}">${conflicts}</div></div>
+      </div>
+      ${cfg.conflict_items && cfg.conflict_items.length ? `<div class="mt"><div class="meta">${esc(t('sync_conflicts'))}</div>${cfg.conflict_items.map(c => `<div class="list-row"><span>${esc(c.entity_id)}</span><span class="badge">${esc(c.op)}</span><span class="meta">${esc(c.detail)}</span></div>`).join('')}</div>` : ''}
+      <div class="mt" style="display:flex;gap:8px;flex-wrap:wrap">
+        ${edge ? `<button class="btn primary" data-action="sync-force">${esc(t('sync_force'))}</button>` : ''}
+        <button class="btn" data-action="refresh-sync">${esc(t('refresh'))}</button>
+      </div>
+    </div>
+    ${canManage ? `<div class="card"><h3>${esc(t('sync_role'))}</h3>
+      <div class="meta">${esc(t('sync_hint'))}</div>
+      <form data-form="sync-config">
+        <div class="field"><label>${esc(t('sync_mode'))}</label><select name="role" id="sync-role">
+          <option value="standalone" ${role==='standalone'?'selected':''}>${esc(t('mode_standalone'))}</option>
+          <option value="master" ${role==='master'?'selected':''}>${esc(t('mode_master'))}</option>
+          ${canEdge || role==='edge' ? `<option value="edge" ${role==='edge'?'selected':''}>${esc(t('mode_edge'))}</option>` : ''}
+        </select>${canEdge ? '' : `<div class="meta">${esc(t('sync_edge_admin_only'))}</div>`}</div>
+        <div id="sync-edge-fields" style="${edge?'':'display:none'}">
+          <div class="field"><label>${esc(t('sync_master'))}</label><input name="master_url" value="${esc(cfg.master_url||'')}" placeholder="https://master.example.com"></div>
+          <div class="field"><label>${esc(t('sync_remote_project'))}</label><input name="remote_project_id" value="${esc(cfg.remote_project_id||'')}" placeholder="project UUID"></div>
+          <div class="field"><label>${esc(t('sync_token'))}</label><input name="token" type="password" autocomplete="new-password" placeholder="${esc(cfg.has_token ? t('sync_token_keep') : '')}"></div>
+        </div>
+        <button class="btn primary" type="submit">${esc(t('sync_save'))}</button>
+      </form>
+    </div>` : ''}
+  </div>`;
+  const roleSelect = document.getElementById('sync-role');
+  if (roleSelect) roleSelect.addEventListener('change', () => {
+    const fields = document.getElementById('sync-edge-fields');
+    if (fields) fields.style.display = roleSelect.value === 'edge' ? '' : 'none';
+  });
+}
+
+function renderReports(view, id){
+  const entities = state.entities || [];
+  const count = kind => entities.filter(e => e.kind === kind).length;
+  view.innerHTML = `<div class="card">
+    <h3>${esc(t('reports'))}</h3>
+    <div class="stats" style="border-top:0;padding-top:0;margin-top:0">
+      <span><b>${entities.length}</b> ${esc(t('entities'))}</span>
+      <span><b>${count('target')}</b> ${esc(t('kind_target'))}</span>
+      <span><b>${count('finding')}</b> ${esc(t('kind_finding'))}</span>
+      <span><b>${entities.filter(e=>e.status==='exploited').length}</b> ${esc(t('status_exploited'))}</span>
+    </div>
+    <div class="meta mt">${esc(t('report_hint'))}</div>
+    <div class="mt" style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn primary" data-action="open-report" data-id="${esc(id)}">${esc(t('report_html'))}</button>
+      <button class="btn" data-action="download-md" data-id="${esc(id)}">${esc(t('report_md'))}</button>
+    </div>
+    <div class="mt"><div class="kv">
+      <div class="kv-row"><div class="kv-label">${esc(t('project_name'))}</div><div class="kv-value">${esc(state.project.name)}</div></div>
+      <div class="kv-row"><div class="kv-label">${esc(t('description'))}</div><div class="kv-value">${esc(state.project.description || '—')}</div></div>
+      <div class="kv-row"><div class="kv-label">${esc(t('owner'))}</div><div class="kv-value">${esc((state.members.find(m=>m.role==='owner') || {}).display_name || state.project.owner_id)}</div></div>
+    </div></div>
+  </div>`;
+}
+
+/* ============================== graph ============================== */
+async function renderGraph(view, id){
+  view.innerHTML = `<div class="graph" id="graph-container"></div><div class="meta mt">${esc(t('graph_hint'))}</div>`;
+  const data = await api('/projects/' + encodeURIComponent(id) + '/graph');
+  state.graph = data;
+  const container = document.getElementById('graph-container');
+  if (!container) return;
+  if (state.network){ try{ state.network.destroy(); }catch(e){} state.network = null; }
+  if (!data.nodes || !data.nodes.length){ container.innerHTML = `<div class="empty" style="padding-top:260px">${esc(t('no_entities'))}</div>`; return; }
+  const nodes = new vis.DataSet(data.nodes.map(n => ({
+    id:n.id, label:n.title + '\n' + kindLabel(n.kind),
+    shape:'box', margin:10, borderWidth:2,
+    color:{background:kindColor(n.kind), border:kindColor(n.kind), highlight:{background:'#22d3ee', border:'#22d3ee'}},
+    font:{color:'#07131a', size:11, face:'-apple-system,BlinkMacSystemFont,Segoe UI,monospace'}
+  })));
+  const edges = new vis.DataSet((data.edges || []).map(e => ({
+    id:e.id, from:e.from_entity_id, to:e.to_entity_id, label:e.label || '',
+    arrows:{to:{enabled:true, scaleFactor:.6}}, color:{color:'#475569', highlight:'#22d3ee'},
+    font:{color:'#94a3b8', size:10}
+  })));
+  state.network = new vis.Network(container, {nodes, edges}, {
+    physics:{enabled:true, stabilization:{iterations:120}, barnesHut:{gravitationalConstant:-3500, springLength:150, springConstant:.045, damping:.09}},
+    interaction:{hover:true, dragNodes:true, zoomView:true, dragView:true}
+  });
+  state.network.on('click', params => { if (params.nodes && params.nodes.length) showEntityDetail(params.nodes[0]); });
+}
+
+/* ============================== entity modal ============================== */
+const KIND_FIELDS = {
+  target:[['ip','ip','text'],['hostname','hostname','text'],['os','os','text'],['tags','tags','text']],
+  service:[['target_id','target','target'],['port','port','number'],['protocol','protocol','text'],['name','service','text'],['product','product','text'],['version','version','text']],
+  finding:[['target_id','target','target'],['severity','severity','severity'],['cve','cve','text'],['cvss','cvss','number'],['description','data','textarea'],['evidence','evidence','textarea']],
+  credential:[['protocol','protocol','text'],['username','username','text'],['secret','secret','text'],['source','source','text']],
+  evidence:[['filename','filename','text'],['sha256','sha256','text'],['storage_path','storage_path','text'],['size','size','number']],
+  command:[['target_id','target','target'],['command','command','textarea'],['output','output','textarea'],['exit_code','exit_code','number']],
+  task:[['assignee','assignee','text'],['text','text','textarea']],
+  note:[['text','text','textarea']],
+  action:[['text','text','textarea']]
+};
+
+function fieldInput(key, labelKey, type, value){
+  const label = `<label>${esc(t(labelKey))}</label>`;
+  const val = value == null ? '' : value;
+  if (type === 'target'){
+    const options = state.entities.filter(e => e.kind === 'target').map(e => `<option value="${esc(e.id)}" ${String(val)===e.id?'selected':''}>${esc(e.title)}</option>`).join('');
+    return `<div class="field">${label}<select name="f_${key}"><option value="">--</option>${options}</select></div>`;
+  }
+  if (type === 'severity'){
+    return `<div class="field">${label}<select name="f_${key}">${['critical','high','medium','low','info'].map(s=>`<option value="${s}" ${val===s?'selected':''}>${s}</option>`).join('')}</select></div>`;
+  }
+  if (type === 'textarea') return `<div class="field">${label}<textarea name="f_${key}">${esc(val)}</textarea></div>`;
+  return `<div class="field">${label}<input name="f_${key}" type="${type}" value="${esc(val)}"></div>`;
+}
+
+function showEntityForm(entity){
+  state.editingEntity = entity || null;
+  const kind = entity ? entity.kind : 'target';
+  const phase = entity ? entity.phase : (state.phases[0] ? state.phases[0].key : 'recon');
+  const data = entity ? (entity.data || {}) : {};
+  openModal(`<h3>${esc(entity ? t('edit') : t('add_entity'))}</h3>
+    <form data-form="entity">
+      <div class="row"><div class="field"><label>${esc(t('kind'))}</label><select name="kind" ${entity?'disabled':''}>${['target','service','finding','credential','evidence','command','task','note','action'].map(k=>`<option value="${k}" ${k===kind?'selected':''}>${esc(kindLabel(k))}</option>`).join('')}</select></div>
+      <div class="field"><label>${esc(t('phase'))}</label><select name="phase">${state.phases.map(p=>`<option value="${esc(p.key)}" ${p.key===phase?'selected':''}>${esc(phaseName(p))}</option>`).join('')}</select></div></div>
+      <div class="field"><label>${esc(t('title'))}</label><input name="title" required value="${esc(entity?entity.title:'')}"></div>
+      <div class="row" id="entity-fields"></div>
+      <div class="modal-actions"><button type="button" class="btn" data-action="close-modal">${esc(t('cancel'))}</button><button class="btn primary" type="submit">${esc(entity ? t('save') : t('create'))}</button></div>
+    </form>`);
+  const wrap = document.getElementById('entity-fields');
+  const spec = KIND_FIELDS[kind] || [];
+  wrap.innerHTML = spec.map(([key,label,type]) => fieldInput(key,label,type,data[key])).join('');
+  const kindSelect = document.querySelector('form[data-form="entity"] select[name="kind"]');
+  if (kindSelect && !entity){
+    kindSelect.addEventListener('change', () => {
+      const next = KIND_FIELDS[kindSelect.value] || [];
+      wrap.innerHTML = next.map(([key,label,type]) => fieldInput(key,label,type,'')).join('');
+    });
+  }
+}
+
+function showEntityDetail(id){
+  const e = state.entities.find(x => x.id === id);
+  if (!e) return;
+  state.editingEntity = e;
+  const others = state.entities.filter(x => x.id !== e.id);
+  openModal(`<h3>${esc(e.title)}</h3><div class="sub"><span class="badge k-${esc(e.kind)}">${esc(kindLabel(e.kind))}</span> <span class="badge s-${esc(e.status)}">${esc(statusLabel(e.status))}</span> <span class="meta">${esc(fmtDate(e.created_at))}</span></div>
+    <form data-form="entity-detail">
+      <div class="row"><div class="field"><label>${esc(t('status'))}</label><select name="status">${['new','confirmed','exploited','fixed','false_positive'].map(s=>`<option value="${s}" ${s===e.status?'selected':''}>${esc(statusLabel(s))}</option>`).join('')}</select></div>
+      <div class="field"><label>${esc(t('phase'))}</label><select name="phase">${state.phases.map(p=>`<option value="${esc(p.key)}" ${p.key===e.phase?'selected':''}>${esc(phaseName(p))}</option>`).join('')}</select></div></div>
+      <div class="field"><label>${esc(t('data'))}</label>${renderDataFields(e.kind, e.data)}<details class="mt"><summary class="meta">${esc(t('advanced_json'))}</summary><pre>${esc(JSON.stringify(e.data || {}, null, 2))}</pre></details></div>
+      <div class="modal-actions"><button type="button" class="btn danger" data-action="delete-entity" data-id="${esc(e.id)}">${esc(t('delete'))}</button><button type="button" class="btn" data-action="edit-entity" data-id="${esc(e.id)}">${esc(t('edit'))}</button><button type="button" class="btn" data-action="close-modal">${esc(t('cancel'))}</button><button class="btn primary" type="submit">${esc(t('save'))}</button></div>
+    </form>
+    <div class="mt"><label>${esc(t('link'))}</label>
+      <div class="row"><div class="field"><select id="link-target">${others.map(o=>`<option value="${esc(o.id)}">${esc(o.title)}</option>`).join('')}</select></div>
+      <div class="field"><input id="link-label" placeholder="${esc(t('label'))}"></div></div>
+      <button class="btn" data-action="create-link" data-id="${esc(e.id)}">${esc(t('link'))}</button>
+    </div>`);
+}
+
+function collectEntityData(form, existing){
+  const data = Object.assign({}, existing || {});
+  const kind = form.querySelector('[name=kind]') ? form.querySelector('[name=kind]').value : (state.editingEntity ? state.editingEntity.kind : 'target');
+  (KIND_FIELDS[kind] || []).forEach(([key,label,type]) => {
+    const el = form.querySelector('[name=f_' + key + ']');
+    if (!el) return;
+    let v = el.value;
+    if (v === ''){ delete data[key]; return; }
+    if (type === 'number'){ const n = Number(v); v = isNaN(n) ? v : n; }
+    data[key] = v;
+  });
+  return data;
+}
+
+/* ============================== admin ============================== */
+async function renderAdmin(){
+  if (!state.user || !state.user.is_platform_admin){
+    location.hash = '#/projects';
+    return;
+  }
+  const [regs, users, tokens] = await Promise.all([
+    api('/admin/registrations?status=pending'), api('/admin/users'), api('/admin/tokens')
+  ]);
+  state.admin.registrations = regs.registrations || [];
+  state.admin.users = users.users || [];
+  state.admin.tokens = tokens.tokens || [];
+  if (!state.projects.length){ try { state.projects = (await api('/projects')).projects || []; } catch(e){} }
+  app.innerHTML = topbar() + `<div class="container">
+    <div class="page-head"><h1 class="page-title">${esc(t('admin'))}</h1></div>
+    <div class="split">
+      <div class="card"><h3>${esc(t('registrations'))}</h3>
+        ${state.admin.registrations.map(r=>`<div class="list-row"><div><b>${esc(r.username)}</b> <span class="meta">${esc(r.display_name || '')} ${esc(r.email || '')}</span><div class="meta">${esc(r.reason || '')}</div></div><div class="spacer"></div><button class="btn small primary" data-action="approve-reg" data-id="${esc(r.id)}">${esc(t('approve'))}</button><button class="btn small danger" data-action="reject-reg" data-id="${esc(r.id)}">${esc(t('reject'))}</button></div>`).join('') || `<div class="empty">${esc(t('no_data'))}</div>`}
+      </div>
+      <div class="card"><h3>${esc(t('users'))}</h3>
+        ${state.admin.users.map(u=>`<div class="list-row"><div><b>${esc(u.username)}</b> <span class="meta">${esc(u.display_name || '')}</span></div><span class="badge">${esc(u.is_platform_admin?t('admin'):(u.status==='active'?t('status_active'):t('status_disabled')))}</span><div class="spacer"></div><button class="btn small" data-action="toggle-user" data-id="${esc(u.id)}" data-status="${u.status==='active'?'disabled':'active'}">${esc(u.status==='active'?t('disable'):t('enable'))}</button></div>`).join('') || `<div class="empty">${esc(t('no_data'))}</div>`}
+      </div>
+    </div>
+    <div class="card mt"><h3>${esc(t('tokens'))}</h3>
+      <form data-form="create-token" class="row3">
+        <div class="field"><label>${esc(t('token_name'))}</label><input name="name" required maxlength="80"></div>
+        <div class="field"><label>${esc(t('scopes'))}</label><input name="scopes" value="read,write"></div>
+        <div class="field"><label>${esc(t('project'))}</label><select name="project_id"><option value="">${esc(t('all'))}</option>${state.projects.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select></div>
+        <div class="field" style="display:flex;align-items:flex-end"><button class="btn primary" type="submit">${esc(t('create_token'))}</button></div>
+      </form>
+      <div class="mt">${state.admin.tokens.map(tok=>`<div class="list-row"><span><b>${esc(tok.name)}</b> <span class="meta">${esc(tok.scopes)} ${esc(tok.project_id||'')}</span></span><div class="spacer"></div><span class="meta">${esc(fmtDate(tok.created_at))}</span><button class="btn small danger" data-action="revoke-token" data-id="${esc(tok.id)}">${esc(t('revoke'))}</button></div>`).join('') || `<div class="empty">${esc(t('no_data'))}</div>`}</div>
+    </div>
+  </div>`;
+}
+
+/* ============================== actions ============================== */
+async function refreshCurrent(){
+  const hash = location.hash || '#/';
+  if (!state.user) return renderAuth(hash === '#/register' ? 'register' : 'login');
+  if (hash.startsWith('#/project/')) {
+    const m = hash.match(/^#\/project\/([^/]+)(?:\/([^/]+))?/);
+    if (m) return renderProject(m[1], m[2] || 'board');
+  }
+  if (hash === '#/admin') return renderAdmin();
+  return renderProjects();
+}
+
+function closeStream(){
+  clearTimeout(state.refreshTimer);
+  state.refreshTimer = null;
+  clearTimeout(state.streamTimer);
+  state.streamTimer = null;
+  state.streamTimerProject = null;
+  state.pendingRefresh = false;
+  const ws = state.stream;
+  state.stream = null;
+  state.streamProject = null;
+  if (ws){ try { ws.close(); } catch(e){} }
+}
+
+function openStream(id){
+  closeStream();
+  if (!state.user || !window.WebSocket) return;
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const ws = new WebSocket(`${proto}//${location.host}/api/v1/projects/${encodeURIComponent(id)}/stream`);
+  state.stream = ws;
+  state.streamProject = id;
+  ws.onopen = () => { state.streamBackoff = 2000; };
+  ws.onmessage = ev => {
+    try {
+      const msg = JSON.parse(ev.data);
+      if (msg.type === 'changed' || msg.type === 'ready') scheduleRefresh();
+    } catch(e){}
+  };
+  ws.onclose = () => {
+    if (state.stream !== ws) return;
+    state.stream = null;
+    state.streamProject = null;
+    if (state.user && state.project && state.project.id === id) {
+      const delay = state.streamBackoff;
+      state.streamBackoff = Math.min(state.streamBackoff * 2, 30000);
+      state.streamTimerProject = id;
+      state.streamTimer = setTimeout(() => {
+        state.streamTimer = null;
+        state.streamTimerProject = null;
+        if (state.user && state.project && state.project.id === id && !state.stream) openStream(id);
+      }, delay);
+    }
+  };
+  ws.onerror = () => { try { ws.close(); } catch(e){} };
+}
+
+function scheduleRefresh(){
+  const active = document.activeElement;
+  if (document.querySelector('.modal') || (active && ['INPUT','SELECT','TEXTAREA'].includes(active.tagName))) {
+    state.pendingRefresh = true;
+    return;
+  }
+  state.pendingRefresh = false;
+  clearTimeout(state.refreshTimer);
+  state.refreshTimer = setTimeout(() => {
+    if (state.user && state.project) refreshCurrent();
+  }, 300);
+}
+
+document.addEventListener('focusout', () => {
+  if (state.pendingRefresh && !document.querySelector('.modal')) {
+    state.pendingRefresh = false;
+    setTimeout(() => scheduleRefresh(), 0);
+  }
+});
+
+const actions = {
+  'nav': el => { location.hash = el.dataset.href; },
+  'lang': async el => {
+    state.locale = el.dataset.lang;
+    localStorage.setItem('shadowedge_locale', state.locale);
+    if (state.user){ try { await api('/auth/me/locale', {method:'PATCH', body:{locale:state.locale}}); } catch(e){} }
+    refreshCurrent();
+  },
+  'logout': async () => {
+    try { await api('/auth/logout', {method:'POST'}); } catch(e){}
+    state.user = null; location.hash = '#/login';
+  },
+  'new-project': () => showNewProject(),
+  'refresh-sync': () => refreshCurrent(),
+  'sync-force': async () => {
+    await api('/projects/' + state.project.id + '/sync/force', {method:'POST'});
+    toast(t('sync_force_ok')); await refreshCurrent();
+  },
+  'change-password': () => openModal(`<h3>${esc(t('change_password'))}</h3>
+    <form data-form="change-password">
+      <div class="field"><label>${esc(t('current_password'))}</label><input name="old_password" type="password" required autocomplete="current-password"></div>
+      <div class="field"><label>${esc(t('new_password'))}</label><input name="new_password" type="password" minlength="8" required autocomplete="new-password"></div>
+      <div class="field"><label>${esc(t('confirm_password'))}</label><input name="confirm_password" type="password" minlength="8" required autocomplete="new-password"></div>
+      <div class="modal-actions"><button type="button" class="btn" data-action="close-modal">${esc(t('cancel'))}</button><button class="btn primary" type="submit">${esc(t('save'))}</button></div>
+    </form>`),
+  'close-modal': () => closeModal(),
+  'open-project': el => { location.hash = '#/project/' + el.dataset.id + '/board'; },
+  'add-entity': () => showEntityForm(null),
+  'open-entity': el => showEntityDetail(el.dataset.id),
+  'edit-entity': el => { const e = state.entities.find(x=>x.id===el.dataset.id); closeModal(); showEntityForm(e); },
+  'delete-entity': async el => {
+    if (!confirm(t('confirm_delete'))) return;
+    await api('/projects/' + state.project.id + '/entities/' + el.dataset.id, {method:'DELETE'});
+    closeModal(); toast(t('deleted')); await refreshCurrent();
+  },
+  'create-link': async el => {
+    const from = el.dataset.id;
+    const to = document.getElementById('link-target').value;
+    const label = document.getElementById('link-label').value;
+    if (!to) return;
+    await api('/projects/' + state.project.id + '/graph/edges', {method:'POST', body:{from_entity_id:from,to_entity_id:to,label}});
+    closeModal(); toast(t('saved')); await refreshCurrent();
+  },
+  'remove-member': async el => {
+    if (!confirm(t('confirm_remove'))) return;
+    await api('/projects/' + state.project.id + '/members/' + el.dataset.uid, {method:'DELETE'});
+    toast(t('removed')); await refreshCurrent();
+  },
+  'open-report': el => { window.open('/api/v1/projects/' + el.dataset.id + '/report?format=html', '_blank'); },
+  'download-md': async el => {
+    const resp = await fetch('/api/v1/projects/' + el.dataset.id + '/report?format=markdown', {credentials:'same-origin'});
+    const text = await resp.text();
+    const blob = new Blob([text], {type:'text/markdown;charset=utf-8'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'shadowedge-report.md'; a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 10000);
+  },
+  'approve-reg': async el => { await api('/admin/registrations/' + el.dataset.id + '/approve', {method:'POST'}); toast(t('registration_reviewed')); await renderAdmin(); },
+  'reject-reg': async el => { await api('/admin/registrations/' + el.dataset.id + '/reject', {method:'POST'}); toast(t('registration_reviewed')); await renderAdmin(); },
+  'toggle-user': async el => { await api('/admin/users/' + el.dataset.id + '/status', {method:'PATCH', body:{status:el.dataset.status}}); toast(t('user_updated')); await renderAdmin(); },
+  'revoke-token': async el => { if(!confirm(t('confirm_revoke'))) return; await api('/admin/tokens/' + el.dataset.id, {method:'DELETE'}); toast(t('token_revoked')); await renderAdmin(); }
+};
+
+document.addEventListener('click', async ev => {
+  const el = ev.target.closest('[data-action]');
+  if (el && actions[el.dataset.action]){
+    ev.preventDefault();
+    try { await actions[el.dataset.action](el, ev); }
+    catch(err){ toast(err.message || t('error'), 'err'); }
+  }
+  if (ev.target && ev.target.dataset && ev.target.dataset.backdrop){ closeModal(); }
+});
+
+/* ============================== forms ============================== */
+document.addEventListener('submit', async ev => {
+  const form = ev.target.closest('form[data-form]');
+  if (!form) return;
+  ev.preventDefault();
+  const button = form.querySelector('button[type=submit]');
+  if (button) button.disabled = true;
+  try {
+    const fd = new FormData(form);
+    const val = name => (fd.get(name) || '').toString();
+    switch (form.dataset.form){
+      case 'login': {
+        const data = await api('/auth/login', {method:'POST', body:{username:val('username'), password:val('password')}});
+        state.user = data.user;
+        state.locale = data.user.locale || state.locale;
+        localStorage.setItem('shadowedge_locale', state.locale);
+        location.hash = '#/projects';
+        break;
+      }
+      case 'register': {
+        if (val('password') !== val('confirm_password')) throw new Error(t('confirm_password'));
+        await api('/auth/register', {method:'POST', body:{
+          username:val('username'), display_name:val('display_name'), email:val('email'),
+          password:val('password'), reason:val('reason')
+        }});
+        showAuthMessage(t('pending_ok'), 'ok');
+        break;
+      }
+      case 'create-project': {
+        const data = await api('/projects', {method:'POST', body:{name:val('name'), description:val('description')}});
+        closeModal(); toast(t('project_created')); location.hash = '#/project/' + data.project.id + '/board';
+        break;
+      }
+      case 'add-member': {
+        await api('/projects/' + state.project.id + '/members', {method:'POST', body:{username:val('username'), role:val('role')}});
+        toast(t('member_created')); await refreshCurrent();
+        break;
+      }
+      case 'entity': {
+        const kind = form.querySelector('[name=kind]').value;
+        const existing = state.editingEntity || null;
+        const body = {kind, title:val('title'), phase:val('phase'), data:collectEntityData(form, existing ? existing.data : {})};
+        if (existing){
+          delete body.kind;
+          body.base_version = existing.version;
+          await api('/projects/' + state.project.id + '/entities/' + existing.id, {method:'PATCH', body});
+        } else {
+          await api('/projects/' + state.project.id + '/entities', {method:'POST', body});
+        }
+        closeModal(); toast(t('saved')); await refreshCurrent();
+        break;
+      }
+      case 'entity-detail': {
+        const existing = state.editingEntity;
+        const body = {status:val('status'), phase:val('phase'), base_version:existing.version};
+        await api('/projects/' + state.project.id + '/entities/' + existing.id, {method:'PATCH', body});
+        closeModal(); toast(t('saved')); await refreshCurrent();
+        break;
+      }
+      case 'sync-config': {
+        const role = val('role');
+        const base = state.syncConfig || {};
+        const repoint = role === 'edge' && (base.role !== 'edge' || base.master_url !== val('master_url') || base.remote_project_id !== val('remote_project_id'));
+        if (repoint && !confirm(t('sync_repoint_confirm'))) break;
+        await api('/projects/' + state.project.id + '/sync/config', {method:'PUT', body:{
+          role, master_url: val('master_url'), remote_project_id: val('remote_project_id'),
+          token: val('token'), reset: repoint
+        }});
+        toast(t('sync_saved')); await refreshCurrent();
+        break;
+      }
+      case 'create-token': {
+        const data = await api('/admin/tokens', {method:'POST', body:{
+          name:val('name'), scopes:val('scopes'), project_id:val('project_id')
+        }});
+        openModal(`<h3>${esc(t('token_created'))}</h3><div class="sub">${esc(t('token_once'))}</div><pre>${esc(data.token)}</pre><div class="modal-actions"><button class="btn primary" data-action="close-modal">${esc(t('close'))}</button></div>`);
+        await renderAdmin();
+        break;
+      }
+      case 'change-password': {
+        if (val('new_password') !== val('confirm_password')) throw new Error(t('password_mismatch'));
+        await api('/auth/me/password', {method:'PUT', body:{
+          old_password: val('old_password'), new_password: val('new_password')
+        }});
+        closeModal(); toast(t('password_changed'));
+        break;
+      }
+    }
+  } catch(err){
+    const msg = document.getElementById('auth-msg');
+    if (msg) showAuthMessage(err.message || t('error'), 'err');
+    else toast(err.message || t('error'), 'err');
+  } finally {
+    if (button) button.disabled = false;
+  }
+});
+
+function showAuthMessage(text, kind){
+  const el = document.getElementById('auth-msg');
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'msg show ' + kind;
+}
+
+/* ============================== router ============================== */
+async function route(){
+  try {
+    const hash = location.hash || '#/';
+    if (!state.user){
+      closeStream();
+      renderAuth(hash === '#/register' ? 'register' : 'login');
+      return;
+    }
+    if (hash === '#/admin'){ closeStream(); await renderAdmin(); return; }
+    const m = hash.match(/^#\/project\/([^/]+)(?:\/([^/]+))?/);
+    if (m){ await renderProject(m[1], m[2] || 'board'); return; }
+    closeStream();
+    if (hash === '#/login' || hash === '#/register'){ location.hash = '#/projects'; return; }
+    await renderProjects();
+  } catch(err){
+    if (state.user === null) renderAuth('login');
+    else toast(err.message || t('error'), 'err');
+  }
+}
+window.addEventListener('hashchange', route);
+
+async function boot(){
+  try {
+    const data = await api('/auth/me');
+    state.user = data.user;
+    if (data.user.locale) state.locale = data.user.locale;
+  } catch(e){ state.user = null; }
+  route();
+}
+boot();
+})();
+</script>
+</body>
+</html>
