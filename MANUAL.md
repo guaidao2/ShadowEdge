@@ -115,24 +115,66 @@ standard phases:
 10. Objective / Impact
 11. Reporting
 
+### Asset center
+
+The project workspace also has **Hosts**, **Services** and **Findings** views.
+Hosts store IP/hostname/OS/importance; services link to a host and store
+port/protocol/product/version/banner; findings link to a host or service and
+store the full vulnerability record. The DAG uses the same nodes, so assets and
+findings can be chained into attack paths.
+
 Use **Add entity** to record an item. Choose a kind, phase, title and the
-kind-specific fields.
+kind-specific fields. Each phase column also has a **+** button: it opens the
+form with that phase preselected and the phase-specific fields below. Services,
+findings and commands can be created without a target; the target selector is
+optional.
 
 ### Entity kinds and fields
 
 | Kind | Fields |
 |---|---|
-| `target` | IP/hostname, hostname, OS, tags |
-| `service` | target, port, protocol, service name, product, version |
-| `finding` | target, severity, CVE, CVSS, description, evidence |
-| `credential` | protocol, username, secret, source |
+| `target` | IP/hostname, hostname, OS, tags, description, importance |
+| `service` | target (optional), port, protocol, service name, product, version, banner |
+| `finding` | target/service, vulnerability type, severity, CVE, CWE, CVSS/vector, endpoint, parameter, payload, description, impact, reproduction, evidence, remediation, references, tags |
+| `credential` | target/service (optional), protocol, username, secret, source |
 | `evidence` | filename, SHA-256, storage path, size |
-| `command` | target, command, output, exit code |
+| `command` | target (optional), command, output, exit code |
 | `task` | assignee, text |
 | `note` | text |
 | `action` | text |
 
 Statuses are `new`, `confirmed`, `exploited`, `fixed` and `false_positive`.
+
+The table lists built-in shortcuts. Every entity can also add arbitrary custom
+fields; they are stored in the entity JSON and shown in the detail dialog and
+reports.
+
+### Phase-specific fields
+
+| Phase | Default entity | Extra fields |
+|---|---|---|
+| Reconnaissance | target | scope, source, contacts, notes |
+| Scanning & Enumeration | service | scan type, tool, ports, banner, result |
+| Initial Access | finding | vector, endpoint, parameter, payload, result |
+| Foothold / C2 | action | implant, listener, host, result |
+| Privilege Escalation | finding | technique, from user, to user, result |
+| Credential Access | credential | account, secret type, validated, source |
+| Lateral Movement | action | source host, destination host, protocol, technique, result |
+| Persistence | action | mechanism, location, trigger, result |
+| Collection & Exfiltration | evidence | data type, volume, channel, destination, result |
+| Objective / Impact | note | objective, impact, achieved, result |
+| Reporting | note | summary, recommendations, references |
+
+Some phase fields also exist in the entity kind; the form shows each field once.
+
+### Finding lifecycle
+
+Findings are asset-scoped records. A finding is identified by its host/service
+plus CVE; when no CVE is present, by host/service + type + title + endpoint +
+parameter. Capturing the same finding in another phase merges it into the same
+record and appends to its phase history. The phase board shows the current
+phase; the detail dialog shows the full lifecycle. A host or service with
+dependent findings cannot be deleted until those records are removed.
 
 The entity list and detail dialog render labeled fields. Use **Advanced JSON**
 only when you need the raw payload.

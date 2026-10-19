@@ -105,10 +105,14 @@ tr:hover td{background:rgba(34,211,238,.03)}
 .filters input,.filters select{max-width:180px}
 .modal-root{position:relative;z-index:50}
 .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,12,.75);display:flex;align-items:flex-start;justify-content:center;padding:38px 16px;overflow:auto}
-.modal{width:100%;max-width:720px;background:var(--panel);border:1px solid var(--border-2);border-radius:12px;padding:20px;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.modal{width:100%;max-width:720px;max-height:calc(100vh - 76px);overflow:auto;background:var(--panel);border:1px solid var(--border-2);border-radius:12px;padding:20px;box-shadow:0 24px 80px rgba(0,0,0,.5)}
 .modal h3{margin:0 0 4px;font-size:16px;color:var(--accent)}
 .modal .sub{color:var(--muted);font-size:12px;margin-bottom:16px}
-.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap;position:sticky;bottom:-20px;background:var(--panel);padding-top:10px;padding-bottom:4px;z-index:2}
+.board-col.highlight{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+.form-section{margin-top:14px;border-top:1px solid var(--border);padding-top:10px;grid-column:1/-1}
+.form-section:first-child{border-top:0;padding-top:0}
+.form-section h4{margin:0 0 8px;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
 pre{background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:10px;overflow:auto;font-size:11px;color:#cbd5e1;white-space:pre-wrap;word-break:break-word}
 .toast{position:fixed;right:18px;bottom:18px;max-width:420px;background:var(--panel);border:1px solid var(--border-2);border-left:3px solid var(--accent);border-radius:8px;padding:10px 13px;font-size:12px;box-shadow:0 10px 40px rgba(0,0,0,.4);z-index:100;transition:opacity .2s}
 .toast.err{border-left-color:var(--danger)}
@@ -140,10 +144,10 @@ const I18N = {
     username:'Username', password:'Password', confirm_password:'Confirm password', display_name:'Display name', email:'Email', reason:'Reason',
     auth_note:'Accounts require administrator approval.', pending_ok:'Request submitted. An administrator must approve it before you can sign in.',
     logout:'Logout', projects:'Projects', new_project:'New project', project_name:'Project name', description:'Description', create:'Create', cancel:'Cancel',
-    no_projects:'No projects yet. Create one to begin.', open:'Open', board:'Phase board', graph:'DAG', entities:'Entities', members:'Members',
-    reports:'Reports', admin:'Admin', add_entity:'Add entity', add_member:'Add member', remove:'Remove', save:'Save', delete:'Delete', edit:'Edit',
+    no_projects:'No projects yet. Create one to begin.', open:'Open', board:'Phase board', hosts:'Hosts', services:'Services', findings:'Findings', graph:'DAG', entities:'Entities', members:'Members',
+    reports:'Reports', admin:'Admin', add_entity:'Add entity', add_finding:'Add finding', add_host:'Add host', add_service:'Add service', add_member:'Add member', remove:'Remove', save:'Save', delete:'Delete', edit:'Edit',
     link:'Link', link_to:'Link to', label:'Label', details:'Details', data:'Data', status:'Status', phase:'Phase', title:'Title', kind:'Kind',
-    filter_kind:'All kinds', filter_status:'All statuses', filter_phase:'All phases', search:'Search title or data', all:'All',
+    filter_kind:'All kinds', filter_status:'All statuses', filter_phase:'All phases', all_severities:'All severities', sort_severity:'Severity', sort_title:'Title', search:'Search title or data', all:'All',
     role:'Role', owner:'Owner', operator:'Operator', viewer:'Viewer', auditor:'Auditor',
     registrations:'Registration requests', users:'Users', tokens:'API tokens', approve:'Approve', reject:'Reject',
     create_token:'Create token', revoke:'Revoke', scopes:'Scopes', project:'Project', token_once:'Copy this token now. It will not be shown again.',
@@ -154,12 +158,23 @@ const I18N = {
     kind_target:'Target', kind_service:'Service', kind_finding:'Finding', kind_credential:'Credential',
     kind_evidence:'Evidence', kind_command:'Command', kind_task:'Task', kind_note:'Note', kind_action:'Action',
     status_new:'New', status_confirmed:'Confirmed', status_exploited:'Exploited', status_fixed:'Fixed', status_false_positive:'False positive',
+    severity_critical:'Critical', severity_high:'High', severity_medium:'Medium', severity_low:'Low', severity_info:'Info',
+    no_matches:'No matches',
     role_owner:'Owner', role_operator:'Operator', role_viewer:'Viewer', role_auditor:'Auditor',
-    phase_count:'entities', target:'Target', ip:'IP / hostname', hostname:'Hostname', os:'OS', tags:'Tags', port:'Port', protocol:'Protocol',
+    phase_count:'entities', target:'Target', target_optional:'Target (optional)', ip:'IP / hostname', hostname:'Hostname', os:'OS', tags:'Tags', importance:'Importance', port:'Port', protocol:'Protocol',
     service:'Service', product:'Product', version:'Version', severity:'Severity', cve:'CVE', cvss:'CVSS', evidence:'Evidence',
+    vuln_type:'Vulnerability type', cwe:'CWE', cvss_vector:'CVSS vector', endpoint:'Endpoint / URL', parameter:'Parameter',
+    payload:'Payload', impact:'Impact', repro:'Reproduction', remediation:'Remediation', references:'References',
+    sec_identification:'Identification', sec_evidence:'Location & evidence', sec_analysis:'Analysis', sec_remediation:'Remediation',
+    phase_fields:'Phase-specific fields', scope:'Scope', contacts:'Contacts', notes:'Notes', scan_type:'Scan type', tool:'Tool',
+    ports:'Ports', banner:'Banner', result:'Result', vector:'Vector', implant:'Implant', listener:'Listener', host:'Host',
+    technique:'Technique', from_user:'From user', to_user:'To user', account:'Account', secret_type:'Secret type',
+    validated:'Validated', source_host:'Source host', dest_host:'Destination host', mechanism:'Mechanism', location:'Location',
+    trigger:'Trigger', data_type:'Data type', volume:'Volume', channel:'Channel', destination:'Destination',
+    objective:'Objective', achieved:'Achieved', summary:'Summary', recommendations:'Recommendations',
     secret:'Secret', source:'Source', filename:'Filename', sha256:'SHA-256', storage_path:'Storage path', size:'Size',
     command:'Command', output:'Output', exit_code:'Exit code', assignee:'Assignee', text:'Text', actions:'Actions',
-    confirm:'Confirm', close:'Close', project_created:'Project created', entity_created:'Entity created', member_created:'Member added',
+    confirm:'Confirm', close:'Close', project_created:'Project created', entity_created:'Entity created', finding_merged:'Existing finding updated with a new phase', phase_history:'Phase history', member_created:'Member added',
     token_created:'Token created', token_revoked:'Token revoked', user_updated:'User updated', registration_reviewed:'Request reviewed',
     no_projects_hint:'Create a project, then record targets, services, findings, credentials, evidence and commands.',
     sync:'Sync', sync_mode:'Mode', sync_master:'Master', sync_last_seq:'Last sequence',
@@ -174,7 +189,7 @@ const I18N = {
     token_name:'Token name', status_active:'Active', status_disabled:'Disabled', enable:'Enable', disable:'Disable',
     graph_hint:'Click a node to open its details. Create links from an entity detail dialog.',
     report_hint:'Reports include the executive summary, phase coverage, entity details and the DAG attack chain.',
-    advanced_json:'Advanced JSON', no_members:'No members yet.',
+    advanced_json:'Advanced JSON', custom_fields:'Custom fields', add_field:'Add field', field_key:'Field name', field_value:'Value', no_members:'No members yet.',
     change_password:'Change password', current_password:'Current password', new_password:'New password',
     password_changed:'Password updated', password_mismatch:'Passwords do not match', password_incorrect:'Current password is incorrect',
   },
@@ -184,10 +199,10 @@ const I18N = {
     username:'用户名', password:'密码', confirm_password:'确认密码', display_name:'显示名', email:'邮箱', reason:'申请理由',
     auth_note:'账号需要管理员审批后才能使用。', pending_ok:'申请已提交，管理员审批通过后才能登录。',
     logout:'退出', projects:'项目', new_project:'新建项目', project_name:'项目名称', description:'描述', create:'创建', cancel:'取消',
-    no_projects:'暂无项目，先创建一个。', open:'打开', board:'阶段作战板', graph:'DAG 攻击图', entities:'实体', members:'成员',
-    reports:'报告', admin:'管理', add_entity:'添加实体', add_member:'添加成员', remove:'移除', save:'保存', delete:'删除', edit:'编辑',
+    no_projects:'暂无项目，先创建一个。', open:'打开', board:'阶段作战板', hosts:'主机', services:'服务', findings:'漏洞', graph:'DAG 攻击图', entities:'实体', members:'成员',
+    reports:'报告', admin:'管理', add_entity:'添加实体', add_finding:'添加漏洞', add_host:'添加主机', add_service:'添加服务', add_member:'添加成员', remove:'移除', save:'保存', delete:'删除', edit:'编辑',
     link:'连线', link_to:'连接到', label:'说明', details:'详情', data:'数据', status:'状态', phase:'阶段', title:'标题', kind:'类型',
-    filter_kind:'全部类型', filter_status:'全部状态', filter_phase:'全部阶段', search:'搜索标题或数据', all:'全部',
+    filter_kind:'全部类型', filter_status:'全部状态', filter_phase:'全部阶段', all_severities:'全部严重性', sort_severity:'严重性', sort_title:'标题', search:'搜索标题或数据', all:'全部',
     role:'角色', owner:'所有者', operator:'操作员', viewer:'只读', auditor:'审计',
     registrations:'注册申请', users:'用户', tokens:'API Token', approve:'批准', reject:'拒绝',
     create_token:'创建 Token', revoke:'撤销', scopes:'权限范围', project:'项目', token_once:'请现在复制 Token，之后不会再次显示。',
@@ -198,12 +213,23 @@ const I18N = {
     kind_target:'目标', kind_service:'服务', kind_finding:'漏洞', kind_credential:'凭据',
     kind_evidence:'证据', kind_command:'命令', kind_task:'任务', kind_note:'备注', kind_action:'行动',
     status_new:'新发现', status_confirmed:'已确认', status_exploited:'已利用', status_fixed:'已修复', status_false_positive:'误报',
+    severity_critical:'严重', severity_high:'高', severity_medium:'中', severity_low:'低', severity_info:'信息',
+    no_matches:'没有匹配项',
     role_owner:'所有者', role_operator:'操作员', role_viewer:'只读', role_auditor:'审计',
-    phase_count:'个实体', target:'目标', ip:'IP / 主机名', hostname:'主机名', os:'操作系统', tags:'标签', port:'端口', protocol:'协议',
+    phase_count:'个实体', target:'目标', target_optional:'目标（可选）', ip:'IP / 主机名', hostname:'主机名', os:'操作系统', tags:'标签', importance:'重要性', port:'端口', protocol:'协议',
     service:'服务名', product:'产品', version:'版本', severity:'严重性', cve:'CVE', cvss:'CVSS', evidence:'证据',
+    vuln_type:'漏洞类型', cwe:'CWE', cvss_vector:'CVSS 向量', endpoint:'端点 / URL', parameter:'参数',
+    payload:'Payload', impact:'影响', repro:'复现步骤', remediation:'修复建议', references:'参考链接',
+    sec_identification:'漏洞标识', sec_evidence:'位置与证据', sec_analysis:'分析', sec_remediation:'修复',
+    phase_fields:'阶段专用字段', scope:'范围', contacts:'联系人', notes:'备注', scan_type:'扫描类型', tool:'工具',
+    ports:'端口列表', banner:'Banner', result:'结果', vector:'入口向量', implant:'Implant', listener:'监听器', host:'主机',
+    technique:'技术', from_user:'原用户', to_user:'目标用户', account:'账号', secret_type:'凭据类型',
+    validated:'已验证', source_host:'源主机', dest_host:'目标主机', mechanism:'机制', location:'位置',
+    trigger:'触发方式', data_type:'数据类型', volume:'数据量', channel:'通道', destination:'目标位置',
+    objective:'目标', achieved:'达成情况', summary:'摘要', recommendations:'建议',
     secret:'口令/哈希', source:'来源', filename:'文件名', sha256:'SHA-256', storage_path:'存储路径', size:'大小',
     command:'命令', output:'输出', exit_code:'退出码', assignee:'负责人', text:'内容', actions:'操作',
-    confirm:'确认', close:'关闭', project_created:'项目已创建', entity_created:'实体已创建', member_created:'成员已添加',
+    confirm:'确认', close:'关闭', project_created:'项目已创建', entity_created:'实体已创建', finding_merged:'已合并到已有漏洞，并记录新阶段', phase_history:'阶段历史', member_created:'成员已添加',
     token_created:'Token 已创建', token_revoked:'Token 已撤销', user_updated:'用户已更新', registration_reviewed:'申请已处理',
     no_projects_hint:'创建项目后，可以记录目标、服务、漏洞、凭据、证据和命令。',
     sync:'同步', sync_mode:'模式', sync_master:'主节点', sync_last_seq:'最后序号',
@@ -218,7 +244,7 @@ const I18N = {
     token_name:'Token 名称', status_active:'启用', status_disabled:'禁用', enable:'启用', disable:'禁用',
     graph_hint:'点击节点查看详情；在实体详情中创建连线。',
     report_hint:'报告包含执行摘要、阶段覆盖、实体详情和 DAG 攻击链。',
-    advanced_json:'高级 JSON', no_members:'暂无成员。',
+    advanced_json:'高级 JSON', custom_fields:'自定义字段', add_field:'添加字段', field_key:'字段名', field_value:'值', no_members:'暂无成员。',
     change_password:'修改密码', current_password:'当前密码', new_password:'新密码',
     password_changed:'密码已更新', password_mismatch:'两次密码不一致', password_incorrect:'当前密码错误',
   }
@@ -249,20 +275,32 @@ function kindColor(k){
   return ({target:'#60a5fa',service:'#a78bfa',finding:'#f87171',credential:'#fbbf24',evidence:'#34d399',command:'#22d3ee',task:'#cbd5e1',note:'#86efac',action:'#fb923c'})[k] || '#94a3b8';
 }
 
+function severityLabel(s){
+  return t('severity_' + s) || s;
+}
+
 const DATA_LABELS = {
-  ip:'ip', hostname:'hostname', os:'os', tags:'tags', target_id:'target',
+  ip:'ip', hostname:'hostname', os:'os', tags:'tags', target_id:'target', service_id:'service', importance:'importance',
   port:'port', protocol:'protocol', name:'service', product:'product', version:'version',
   severity:'severity', cve:'cve', cvss:'cvss', description:'description', evidence:'evidence',
+  vuln_type:'vuln_type', cwe:'cwe', cvss_vector:'cvss_vector', endpoint:'endpoint', parameter:'parameter',
+  payload:'payload', impact:'impact', repro:'repro', remediation:'remediation', references:'references',
   username:'username', secret:'secret', source:'source',
   filename:'filename', sha256:'sha256', storage_path:'storage_path', size:'size',
   command:'command', output:'output', exit_code:'exit_code',
-  assignee:'assignee', due_at:'due_at', done_at:'done_at', text:'text'
+  assignee:'assignee', due_at:'due_at', done_at:'done_at', text:'text',
+  scope:'scope', contacts:'contacts', notes:'notes', scan_type:'scan_type', tool:'tool', ports:'ports', banner:'banner',
+  result:'result', vector:'vector', implant:'implant', listener:'listener', host:'host', technique:'technique',
+  from_user:'from_user', to_user:'to_user', account:'account', secret_type:'secret_type', validated:'validated',
+  source_host:'source_host', dest_host:'dest_host', mechanism:'mechanism', location:'location', trigger:'trigger',
+  data_type:'data_type', volume:'volume', channel:'channel', destination:'destination', objective:'objective',
+  achieved:'achieved', summary:'summary', recommendations:'recommendations'
 };
 
 function dataEntries(kind, data){
   const obj = data || {};
   const order = (KIND_FIELDS[kind] || []).map(([key]) => key);
-  const keys = Object.keys(obj);
+  const keys = Object.keys(obj).filter(key => key !== 'finding_key' && key !== 'phase_history');
   const ordered = order.filter(key => keys.includes(key))
     .concat(keys.filter(key => !order.includes(key)));
   return ordered.map(key => ({
@@ -278,6 +316,11 @@ function dataValue(key, value){
     const target = state.entities.find(e => e.id === value);
     return esc(target ? target.title : value);
   }
+  if (key === 'service_id'){
+    const service = state.entities.find(e => e.id === value);
+    return esc(service ? service.title : value);
+  }
+  if (key === 'severity') return esc(severityLabel(value));
   if (key === 'command' || key === 'output') return `<pre>${esc(value)}</pre>`;
   if (typeof value === 'object') {
     if (Array.isArray(value)) return esc(value.join(', '));
@@ -296,16 +339,24 @@ function renderDataFields(kind, data){
 
 function dataSummary(kind, data){
   const d = data || {};
+  let out = '';
   switch (kind){
-    case 'target': return [d.ip, d.os].filter(Boolean).join(' · ') || '—';
-    case 'service': return [d.port ? `${d.port}/${d.protocol || 'tcp'}` : '', d.name || d.product].filter(Boolean).join(' · ') || '—';
-    case 'finding': return [d.severity, d.cve].filter(Boolean).join(' · ') || '—';
-    case 'credential': return [d.protocol, d.username].filter(Boolean).join(' · ') || '—';
-    case 'command': return (d.command || '').split('\n')[0].slice(0, 70) || '—';
-    case 'evidence': return d.filename || '—';
-    case 'task': case 'note': case 'action': return (d.text || '').slice(0, 70) || '—';
-    default: return '—';
+    case 'target': out = [d.ip, d.os].filter(Boolean).join(' · '); break;
+    case 'service': out = [d.port ? `${d.port}/${d.protocol || 'tcp'}` : '', d.name || d.product].filter(Boolean).join(' · '); break;
+    case 'finding': out = [d.severity, d.vuln_type || d.cve].filter(Boolean).join(' · '); break;
+    case 'credential': out = [d.protocol, d.username].filter(Boolean).join(' · '); break;
+    case 'command': out = (d.command || '').split('\n')[0].slice(0, 70); break;
+    case 'evidence': out = d.filename || ''; break;
+    case 'task': case 'note': case 'action': out = (d.text || '').slice(0, 70); break;
   }
+  if (!out) {
+    const first = Object.entries(d).find(([k, v]) => v !== null && v !== undefined && v !== '');
+    if (first) {
+      const label = DATA_LABELS[first[0]] ? t(DATA_LABELS[first[0]]) : first[0];
+      out = `${label}: ${typeof first[1] === 'object' ? JSON.stringify(first[1]) : first[1]}`;
+    }
+  }
+  return (out || '—').slice(0, 70);
 }
 
 /* ============================== API ============================== */
@@ -456,17 +507,24 @@ async function renderProject(id, tab){
     }
     if (!state.streamTimer) openStream(id);
   }
-  if (!['board','graph','entities','members','reports','sync'].includes(tab)) tab = 'board';
+  if (!['board','hosts','services','findings','graph','entities','members','reports','sync'].includes(tab)) tab = 'board';
+  state.currentTab = tab;
+  const showEntityButton = !['hosts','services','findings'].includes(tab);
+  const showFinding = tab === 'board';
   app.innerHTML = topbar(state.project.name) + `<div class="container">
     <div class="page-head">
       <h1 class="page-title">${esc(state.project.name)}</h1>
       <span class="badge">${esc(roleLabel(state.role))}</span>
       <span class="meta">${esc(state.project.description || '')}</span>
       <div class="spacer"></div>
-      <button class="btn primary" data-action="add-entity">+ ${esc(t('add_entity'))}</button>
+      ${showEntityButton ? `<button class="btn primary" data-action="add-entity">+ ${esc(t('add_entity'))}</button>` : ''}
+      ${showFinding ? `<button class="btn" data-action="add-finding" style="margin-left:8px">+ ${esc(t('add_finding'))}</button>` : ''}
     </div>
     <div class="tabs">
       ${tabButton(id,'board',t('board'),tab)}
+      ${tabButton(id,'hosts',t('hosts'),tab)}
+      ${tabButton(id,'services',t('services'),tab)}
+      ${tabButton(id,'findings',t('findings'),tab)}
       ${tabButton(id,'graph',t('graph'),tab)}
       ${tabButton(id,'entities',t('entities'),tab)}
       ${tabButton(id,'members',t('members'),tab)}
@@ -477,6 +535,9 @@ async function renderProject(id, tab){
   </div>`;
   const view = document.getElementById('project-view');
   if (tab === 'board') await renderBoard(view, id);
+  else if (tab === 'hosts') renderHosts(view, id);
+  else if (tab === 'services') renderServices(view, id);
+  else if (tab === 'findings') renderFindings(view, id);
   else if (tab === 'graph') await renderGraph(view, id);
   else if (tab === 'entities') renderEntities(view, id);
   else if (tab === 'members') renderMembers(view, id);
@@ -493,7 +554,7 @@ async function renderBoard(view, id){
     const items = col.entities || [];
     return `
     <section class="board-col">
-      <div class="board-head"><span class="dot" style="background:${esc(col.phase.color)}"></span>${esc(phaseName(col.phase))}<span class="count">${items.length}</span></div>
+      <div class="board-head"><span class="dot" style="background:${esc(col.phase.color)}"></span>${esc(phaseName(col.phase))}<span class="count">${items.length}</span><span class="spacer"></span><button class="btn small" data-action="add-entity-phase" data-phase="${esc(col.phase.key)}" title="${esc(t('add_entity'))}">+</button></div>
       ${items.map(e => `
         <div class="entity-card" data-action="open-entity" data-id="${esc(e.id)}">
           <div class="t">${esc(e.title)}</div>
@@ -502,6 +563,132 @@ async function renderBoard(view, id){
         </div>`).join('') || `<div class="empty">${esc(t('no_entities'))}</div>`}
     </section>`;
   }).join('')}</div>`;
+  if (state.boardHighlightPhase) {
+    const idx = state.board.findIndex(c => c.phase.key === state.boardHighlightPhase);
+    const cols = view.querySelectorAll('.board-col');
+    if (idx >= 0 && cols[idx]) {
+      cols[idx].classList.add('highlight');
+      cols[idx].scrollIntoView({inline: 'center', block: 'nearest', behavior: 'smooth'});
+    }
+    state.boardHighlightPhase = null;
+  }
+}
+
+function renderHosts(view, id){
+  const hosts = (state.entities || []).filter(e => e.kind === 'target');
+  const services = (state.entities || []).filter(e => e.kind === 'service');
+  const findings = (state.entities || []).filter(e => e.kind === 'finding');
+  const serviceCount = hid => services.filter(s => (s.data || {}).target_id === hid).length;
+  const findingCount = hid => findings.filter(f => {
+    const d = f.data || {};
+    if (d.target_id === hid) return true;
+    const svc = services.find(s => s.id === d.service_id);
+    return svc && (svc.data || {}).target_id === hid;
+  }).length;
+  view.innerHTML = `<div class="card">
+    <div class="page-head"><h2>${esc(t('hosts'))}</h2><span class="meta">${hosts.length}</span><div class="spacer"></div><button class="btn" data-action="nav" data-href="#/project/${esc(id)}/board">${esc(t('board'))}</button> <button class="btn primary" data-action="add-host">+ ${esc(t('add_host'))}</button></div>
+    <div class="filters"><input id="host-search" placeholder="${esc(t('search'))}"></div>
+    <div class="table-wrap"><table><thead><tr><th>${esc(t('ip'))}</th><th>${esc(t('hostname'))}</th><th>${esc(t('os'))}</th><th>${esc(t('phase'))}</th><th>${esc(t('importance'))}</th><th>${esc(t('services'))}</th><th>${esc(t('findings'))}</th><th></th></tr></thead><tbody id="host-rows">
+    ${hosts.map(h => { const d = h.data || {}; return `<tr>
+      <td><a href="#" data-action="open-entity" data-id="${esc(h.id)}">${esc(d.ip || h.title)}</a></td>
+      <td>${esc(d.hostname || '—')}</td>
+      <td>${esc(d.os || '—')}</td>
+      <td><a href="#" data-action="open-board-phase" data-phase="${esc(h.phase)}">${esc(phaseName(state.phases.find(p => p.key === h.phase) || {name_en:h.phase,name_zh:h.phase}))}</a></td>
+      <td>${esc(d.importance == null ? '—' : String(d.importance))}</td>
+      <td>${serviceCount(h.id)}</td>
+      <td>${findingCount(h.id)}</td>
+      <td class="nowrap"><button class="btn small" data-action="show-link" data-id="${esc(h.id)}">${esc(t('link'))}</button> <button class="btn small" data-action="open-entity" data-id="${esc(h.id)}">${esc(t('edit'))}</button></td>
+    </tr>`; }).join('') || `<tr><td colspan="8" class="empty">${esc(t('no_data'))}</td></tr>`}
+    </tbody></table></div></div>`;
+  const hostSearch = document.getElementById('host-search');
+  hostSearch.addEventListener('input', () => {
+    const q = hostSearch.value.toLowerCase();
+    document.querySelectorAll('#host-rows tr').forEach(tr => {
+      tr.style.display = !q || tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+}
+
+function renderServices(view, id){
+  const hosts = (state.entities || []).filter(e => e.kind === 'target');
+  const services = (state.entities || []).filter(e => e.kind === 'service');
+  const findings = (state.entities || []).filter(e => e.kind === 'finding');
+  const hostLink = hid => { const h = hosts.find(x => x.id === hid); return h ? `<a href="#" data-action="open-entity" data-id="${esc(h.id)}">${esc(h.title)}</a>` : '—'; };
+  const findingCount = sid => findings.filter(f => (f.data || {}).service_id === sid).length;
+  view.innerHTML = `<div class="card">
+    <div class="page-head"><h2>${esc(t('services'))}</h2><span class="meta">${services.length}</span><div class="spacer"></div><button class="btn" data-action="nav" data-href="#/project/${esc(id)}/board">${esc(t('board'))}</button> <button class="btn primary" data-action="add-service">+ ${esc(t('add_service'))}</button></div>
+    <div class="filters"><input id="service-search" placeholder="${esc(t('search'))}"></div>
+    <div class="table-wrap"><table><thead><tr><th>${esc(t('target'))}</th><th>${esc(t('port'))}</th><th>${esc(t('service'))}</th><th>${esc(t('product'))} / ${esc(t('version'))}</th><th>${esc(t('findings'))}</th><th>${esc(t('phase'))}</th><th>${esc(t('status'))}</th><th></th></tr></thead><tbody id="service-rows">
+    ${services.map(s => { const d = s.data || {}; const port = d.port ? `${d.port}/${d.protocol || 'tcp'}` : '—'; return `<tr>
+      <td>${hostLink(d.target_id)}</td>
+      <td>${esc(String(port))}</td>
+      <td><a href="#" data-action="open-entity" data-id="${esc(s.id)}">${esc(d.name || s.title)}</a></td>
+      <td>${esc([d.product, d.version].filter(Boolean).join(' ') || '—')}</td>
+      <td>${findingCount(s.id)}</td>
+      <td><a href="#" data-action="open-board-phase" data-phase="${esc(s.phase)}">${esc(phaseName(state.phases.find(p => p.key === s.phase) || {name_en:s.phase,name_zh:s.phase}))}</a></td>
+      <td><span class="badge s-${esc(s.status)}">${esc(statusLabel(s.status))}</span></td>
+      <td class="nowrap"><button class="btn small" data-action="show-link" data-id="${esc(s.id)}">${esc(t('link'))}</button> <button class="btn small" data-action="open-entity" data-id="${esc(s.id)}">${esc(t('edit'))}</button></td>
+    </tr>`; }).join('') || `<tr><td colspan="8" class="empty">${esc(t('no_data'))}</td></tr>`}
+    </tbody></table></div></div>`;
+  const serviceSearch = document.getElementById('service-search');
+  serviceSearch.addEventListener('input', () => {
+    const q = serviceSearch.value.toLowerCase();
+    document.querySelectorAll('#service-rows tr').forEach(tr => {
+      tr.style.display = !q || tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+}
+
+function renderFindings(view, id){
+  const findings = (state.entities || []).filter(e => e.kind === 'finding');
+  const hosts = (state.entities || []).filter(e => e.kind === 'target');
+  const services = (state.entities || []).filter(e => e.kind === 'service');
+  const assetLink = d => {
+    if (d.service_id) { const s = services.find(x => x.id === d.service_id); if (s) return `<a href="#" data-action="open-entity" data-id="${esc(s.id)}">${esc(s.title)}</a>`; }
+    if (d.target_id) { const h = hosts.find(x => x.id === d.target_id); if (h) return `<a href="#" data-action="open-entity" data-id="${esc(h.id)}">${esc(h.title)}</a>`; }
+    return '—';
+  };
+  view.innerHTML = `<div class="card">
+    <div class="page-head"><h2>${esc(t('findings'))}</h2><span class="meta">${findings.length}</span><div class="spacer"></div><button class="btn" data-action="nav" data-href="#/project/${esc(id)}/board">${esc(t('board'))}</button> <button class="btn primary" data-action="add-finding">+ ${esc(t('add_finding'))}</button></div>
+    <div class="filters">
+      <input id="finding-search" placeholder="${esc(t('search'))}">
+      <select id="finding-severity"><option value="">${esc(t('all_severities'))}</option>${['critical','high','medium','low','info'].map(s=>`<option value="${s}">${esc(severityLabel(s))}</option>`).join('')}</select>
+      <select id="finding-sort"><option value="severity">${esc(t('sort_severity'))}</option><option value="title">${esc(t('sort_title'))}</option></select>
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>${esc(t('title'))}</th><th>${esc(t('severity'))}</th><th>${esc(t('vuln_type'))}</th><th>${esc(t('target'))} / ${esc(t('service'))}</th><th>CVE / CWE</th><th>${esc(t('phase'))}</th><th>${esc(t('status'))}</th><th></th></tr></thead><tbody id="finding-rows">
+    ${findings.map(f => { const d = f.data || {}; return `<tr data-severity="${esc(d.severity || '')}" data-title="${esc(f.title)}">
+      <td><a href="#" data-action="open-entity" data-id="${esc(f.id)}">${esc(f.title)}</a></td>
+      <td><span class="badge">${esc(d.severity ? severityLabel(d.severity) : '—')}</span></td>
+      <td>${esc(d.vuln_type || d.cve || '—')}</td>
+      <td>${assetLink(d)}</td>
+      <td>${esc([d.cve, d.cwe].filter(Boolean).join(' · ') || '—')}</td>
+      <td><a href="#" data-action="open-board-phase" data-phase="${esc(f.phase)}">${esc(phaseName(state.phases.find(p => p.key === f.phase) || {name_en:f.phase,name_zh:f.phase}))}</a></td>
+      <td><span class="badge s-${esc(f.status)}">${esc(statusLabel(f.status))}</span></td>
+      <td class="nowrap"><button class="btn small" data-action="show-link" data-id="${esc(f.id)}">${esc(t('link'))}</button> <button class="btn small" data-action="open-entity" data-id="${esc(f.id)}">${esc(t('edit'))}</button></td>
+    </tr>`; }).join('') || `<tr><td colspan="8" class="empty">${esc(t('no_data'))}</td></tr>`}
+    </tbody></table></div></div>`;
+  const findingSearch = document.getElementById('finding-search');
+  const findingSeverity = document.getElementById('finding-severity');
+  const findingSort = document.getElementById('finding-sort');
+  const applyFindingFilters = () => {
+    const q = findingSearch.value.toLowerCase();
+    const severity = findingSeverity.value;
+    const rank = {critical:0, high:1, medium:2, low:3, info:4};
+    const rows = Array.from(document.querySelectorAll('#finding-rows tr'));
+    rows.forEach(tr => {
+      const match = (!q || tr.textContent.toLowerCase().includes(q)) && (!severity || tr.dataset.severity === severity);
+      tr.style.display = match ? '' : 'none';
+    });
+    rows.sort((a, b) => findingSort.value === 'title'
+      ? (a.dataset.title || '').localeCompare(b.dataset.title || '')
+      : ((rank[a.dataset.severity] == null ? 9 : rank[a.dataset.severity]) - (rank[b.dataset.severity] == null ? 9 : rank[b.dataset.severity])));
+    const body = document.getElementById('finding-rows');
+    rows.forEach(tr => body.appendChild(tr));
+  };
+  findingSearch.addEventListener('input', applyFindingFilters);
+  findingSeverity.addEventListener('change', applyFindingFilters);
+  findingSort.addEventListener('change', applyFindingFilters);
+  applyFindingFilters();
 }
 
 function renderEntities(view, id){
@@ -659,16 +846,59 @@ async function renderGraph(view, id){
 
 /* ============================== entity modal ============================== */
 const KIND_FIELDS = {
-  target:[['ip','ip','text'],['hostname','hostname','text'],['os','os','text'],['tags','tags','text']],
-  service:[['target_id','target','target'],['port','port','number'],['protocol','protocol','text'],['name','service','text'],['product','product','text'],['version','version','text']],
-  finding:[['target_id','target','target'],['severity','severity','severity'],['cve','cve','text'],['cvss','cvss','number'],['description','data','textarea'],['evidence','evidence','textarea']],
-  credential:[['protocol','protocol','text'],['username','username','text'],['secret','secret','text'],['source','source','text']],
+  target:[['ip','ip','text'],['hostname','hostname','text'],['os','os','text'],['tags','tags','text'],['description','description','textarea'],['importance','importance','number']],
+  service:[['target_id','target_optional','target'],['port','port','number'],['protocol','protocol','text'],['name','service','text'],['product','product','text'],['version','version','text'],['banner','banner','textarea']],
+  finding:[['target_id','target_optional','target'],['service_id','service','service'],['vuln_type','vuln_type','text'],['severity','severity','severity'],['cve','cve','text'],['cwe','cwe','text'],['cvss','cvss','number'],['cvss_vector','cvss_vector','text'],['endpoint','endpoint','text'],['parameter','parameter','text'],['payload','payload','textarea'],['description','description','textarea'],['impact','impact','textarea'],['repro','repro','textarea'],['evidence','evidence','textarea'],['remediation','remediation','textarea'],['references','references','textarea'],['tags','tags','text']],
+  credential:[['target_id','target_optional','target'],['service_id','service','service'],['protocol','protocol','text'],['username','username','text'],['secret','secret','text'],['source','source','text']],
   evidence:[['filename','filename','text'],['sha256','sha256','text'],['storage_path','storage_path','text'],['size','size','number']],
-  command:[['target_id','target','target'],['command','command','textarea'],['output','output','textarea'],['exit_code','exit_code','number']],
+  command:[['target_id','target_optional','target'],['command','command','textarea'],['output','output','textarea'],['exit_code','exit_code','number']],
   task:[['assignee','assignee','text'],['text','text','textarea']],
   note:[['text','text','textarea']],
   action:[['text','text','textarea']]
 };
+
+const PHASE_SCHEMAS = {
+  recon: {kind:'target', fields:[
+    ['scope','scope','text'], ['source','source','text'], ['contacts','contacts','text'], ['notes','notes','textarea']
+  ]},
+  scan: {kind:'service', fields:[
+    ['scan_type','scan_type','text'], ['tool','tool','text'], ['ports','ports','text'], ['banner','banner','textarea'], ['result','result','textarea']
+  ]},
+  initial_access: {kind:'finding', fields:[
+    ['vector','vector','text'], ['endpoint','endpoint','text'], ['parameter','parameter','text'], ['payload','payload','textarea'], ['result','result','textarea']
+  ]},
+  foothold: {kind:'action', fields:[
+    ['implant','implant','text'], ['listener','listener','text'], ['host','host','text'], ['result','result','textarea']
+  ]},
+  privesc: {kind:'finding', fields:[
+    ['technique','technique','text'], ['from_user','from_user','text'], ['to_user','to_user','text'], ['result','result','textarea']
+  ]},
+  credential_access: {kind:'credential', fields:[
+    ['account','account','text'], ['secret_type','secret_type','text'], ['validated','validated','text'], ['source','source','text']
+  ]},
+  lateral: {kind:'action', fields:[
+    ['source_host','source_host','text'], ['dest_host','dest_host','text'], ['protocol','protocol','text'], ['technique','technique','text'], ['result','result','textarea']
+  ]},
+  persistence: {kind:'action', fields:[
+    ['mechanism','mechanism','text'], ['location','location','text'], ['trigger','trigger','text'], ['result','result','textarea']
+  ]},
+  collection: {kind:'evidence', fields:[
+    ['data_type','data_type','text'], ['volume','volume','text'], ['channel','channel','text'], ['destination','destination','text'], ['result','result','textarea']
+  ]},
+  objective: {kind:'note', fields:[
+    ['objective','objective','text'], ['impact','impact','textarea'], ['achieved','achieved','text'], ['result','result','textarea']
+  ]},
+  reporting: {kind:'note', fields:[
+    ['summary','summary','textarea'], ['recommendations','recommendations','textarea'], ['references','references','textarea']
+  ]}
+};
+
+const FINDING_SECTIONS = [
+  ['sec_identification', ['target_id','service_id','vuln_type','severity','cve','cwe','cvss','cvss_vector','tags']],
+  ['sec_evidence', ['endpoint','parameter','payload','evidence']],
+  ['sec_analysis', ['description','impact','repro']],
+  ['sec_remediation', ['remediation','references']]
+];
 
 function fieldInput(key, labelKey, type, value){
   const label = `<label>${esc(t(labelKey))}</label>`;
@@ -677,17 +907,73 @@ function fieldInput(key, labelKey, type, value){
     const options = state.entities.filter(e => e.kind === 'target').map(e => `<option value="${esc(e.id)}" ${String(val)===e.id?'selected':''}>${esc(e.title)}</option>`).join('');
     return `<div class="field">${label}<select name="f_${key}"><option value="">--</option>${options}</select></div>`;
   }
+  if (type === 'service'){
+    const options = state.entities.filter(e => e.kind === 'service').map(e => `<option value="${esc(e.id)}" ${String(val)===e.id?'selected':''}>${esc(e.title)}</option>`).join('');
+    return `<div class="field">${label}<select name="f_${key}"><option value="">--</option>${options}</select></div>`;
+  }
   if (type === 'severity'){
-    return `<div class="field">${label}<select name="f_${key}">${['critical','high','medium','low','info'].map(s=>`<option value="${s}" ${val===s?'selected':''}>${s}</option>`).join('')}</select></div>`;
+    return `<div class="field">${label}<select name="f_${key}"><option value="" ${val===''?'selected':''}>--</option>${['critical','high','medium','low','info'].map(s=>`<option value="${s}" ${val===s?'selected':''}>${esc(severityLabel(s))}</option>`).join('')}</select></div>`;
   }
   if (type === 'textarea') return `<div class="field">${label}<textarea name="f_${key}">${esc(val)}</textarea></div>`;
   return `<div class="field">${label}<input name="f_${key}" type="${type}" value="${esc(val)}"></div>`;
 }
 
-function showEntityForm(entity){
+function renderEntityFields(container, kind, spec, data){
+  if (kind !== 'finding'){
+    container.innerHTML = spec.map(([key,label,type]) => fieldInput(key,label,type,data ? data[key] : '')).join('');
+    return;
+  }
+  const byKey = new Map(spec.map(field => [field[0], field]));
+  container.innerHTML = FINDING_SECTIONS.map(([label, keys]) => {
+    const fields = keys.map(key => byKey.get(key)).filter(Boolean);
+    if (!fields.length) return '';
+    return `<div class="form-section"><h4>${esc(t(label))}</h4><div class="row">${fields.map(([key,lbl,type]) => fieldInput(key,lbl,type,data ? data[key] : '')).join('')}</div></div>`;
+  }).join('');
+}
+
+function customFieldRow(key, value){  const text = value !== null && typeof value === 'object' ? JSON.stringify(value) : (value == null ? '' : String(value));
+  return `<div class="row custom-field-row" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px">
+    <div class="field"><input class="cf-key" placeholder="${esc(t('field_key'))}" value="${esc(key || '')}"></div>
+    <div class="field"><input class="cf-value" placeholder="${esc(t('field_value'))}" value="${esc(text)}"></div>
+    <div class="field" style="flex:0 0 auto"><button type="button" class="btn small danger" data-action="remove-custom-field">${esc(t('remove'))}</button></div>
+  </div>`;
+}
+
+function allPhaseKeys(){
+  const keys = new Set();
+  Object.values(PHASE_SCHEMAS).forEach(s => (s.fields || []).forEach(([key]) => keys.add(key)));
+  return keys;
+}
+
+function phaseLabel(key){
+  const p = (state.phases || []).find(x => x.key === key);
+  return p ? phaseName(p) : key;
+}
+
+function phaseFieldSpec(phase, kind){
+  const kindKeys = new Set((KIND_FIELDS[kind] || []).map(([key]) => key));
+  return ((PHASE_SCHEMAS[phase] || {}).fields || []).filter(([key]) => !kindKeys.has(key));
+}
+
+function renderPhaseFields(kind, phase, data){
+  const box = document.getElementById('phase-fields-wrap');
+  const wrap = document.getElementById('phase-fields');
+  const name = document.getElementById('phase-fields-name');
+  if (!box || !wrap) return;
+  const spec = phaseFieldSpec(phase, kind);
+  box.style.display = spec.length ? '' : 'none';
+  if (name) name.textContent = phaseLabel(phase);
+  wrap.innerHTML = spec.map(([key,label,type]) => fieldInput(key,label,type,data ? data[key] : '')).join('');
+}
+
+function defaultKindForPhase(phase){
+  return (PHASE_SCHEMAS[phase] || {}).kind || 'note';
+}
+
+function showEntityForm(entity, defaults){
   state.editingEntity = entity || null;
-  const kind = entity ? entity.kind : 'target';
-  const phase = entity ? entity.phase : (state.phases[0] ? state.phases[0].key : 'recon');
+  const phase = entity ? entity.phase : (defaults && defaults.phase ? defaults.phase : (state.phases[0] ? state.phases[0].key : 'recon'));
+  const kind = entity ? entity.kind : (defaults && defaults.kind ? defaults.kind : ((PHASE_SCHEMAS[phase] || {}).kind || 'target'));
   const data = entity ? (entity.data || {}) : {};
   openModal(`<h3>${esc(entity ? t('edit') : t('add_entity'))}</h3>
     <form data-form="entity">
@@ -695,16 +981,42 @@ function showEntityForm(entity){
       <div class="field"><label>${esc(t('phase'))}</label><select name="phase">${state.phases.map(p=>`<option value="${esc(p.key)}" ${p.key===phase?'selected':''}>${esc(phaseName(p))}</option>`).join('')}</select></div></div>
       <div class="field"><label>${esc(t('title'))}</label><input name="title" required value="${esc(entity?entity.title:'')}"></div>
       <div class="row" id="entity-fields"></div>
+      <div class="mt" id="phase-fields-wrap">
+        <label>${esc(t('phase_fields'))} — <span id="phase-fields-name"></span></label>
+        <div class="row" id="phase-fields"></div>
+      </div>
+      <div class="mt">
+        <label>${esc(t('custom_fields'))}</label>
+        <div id="custom-fields"></div>
+        <button type="button" class="btn small" data-action="add-custom-field">+ ${esc(t('add_field'))}</button>
+      </div>
       <div class="modal-actions"><button type="button" class="btn" data-action="close-modal">${esc(t('cancel'))}</button><button class="btn primary" type="submit">${esc(entity ? t('save') : t('create'))}</button></div>
     </form>`);
   const wrap = document.getElementById('entity-fields');
   const spec = KIND_FIELDS[kind] || [];
-  wrap.innerHTML = spec.map(([key,label,type]) => fieldInput(key,label,type,data[key])).join('');
+  renderEntityFields(wrap, kind, spec, data);
+  renderPhaseFields(kind, phase, data);
+  const known = new Set([...spec.map(([key]) => key), ...allPhaseKeys(), 'finding_key', 'phase_history']);
+  const custom = Object.keys(data).filter(key => !known.has(key));
+  const customWrap = document.getElementById('custom-fields');
+  if (customWrap) customWrap.innerHTML = custom.map(key => customFieldRow(key, data[key])).join('');
+  const form = document.querySelector('form[data-form="entity"]');
   const kindSelect = document.querySelector('form[data-form="entity"] select[name="kind"]');
+  const phaseSelect = document.querySelector('form[data-form="entity"] select[name="phase"]');
   if (kindSelect && !entity){
     kindSelect.addEventListener('change', () => {
+      const current = collectEntityData(form);
+      const currentPhase = phaseSelect ? phaseSelect.value : phase;
       const next = KIND_FIELDS[kindSelect.value] || [];
-      wrap.innerHTML = next.map(([key,label,type]) => fieldInput(key,label,type,'')).join('');
+      renderEntityFields(wrap, kindSelect.value, next, current);
+      renderPhaseFields(kindSelect.value, currentPhase, current);
+    });
+  }
+  if (phaseSelect){
+    phaseSelect.addEventListener('change', () => {
+      const current = collectEntityData(form);
+      const currentKind = kindSelect ? kindSelect.value : kind;
+      renderPhaseFields(currentKind, phaseSelect.value, current);
     });
   }
 }
@@ -719,6 +1031,7 @@ function showEntityDetail(id){
       <div class="row"><div class="field"><label>${esc(t('status'))}</label><select name="status">${['new','confirmed','exploited','fixed','false_positive'].map(s=>`<option value="${s}" ${s===e.status?'selected':''}>${esc(statusLabel(s))}</option>`).join('')}</select></div>
       <div class="field"><label>${esc(t('phase'))}</label><select name="phase">${state.phases.map(p=>`<option value="${esc(p.key)}" ${p.key===e.phase?'selected':''}>${esc(phaseName(p))}</option>`).join('')}</select></div></div>
       <div class="field"><label>${esc(t('data'))}</label>${renderDataFields(e.kind, e.data)}<details class="mt"><summary class="meta">${esc(t('advanced_json'))}</summary><pre>${esc(JSON.stringify(e.data || {}, null, 2))}</pre></details></div>
+      ${e.kind === 'finding' ? renderPhaseHistory(e) : ''}
       <div class="modal-actions"><button type="button" class="btn danger" data-action="delete-entity" data-id="${esc(e.id)}">${esc(t('delete'))}</button><button type="button" class="btn" data-action="edit-entity" data-id="${esc(e.id)}">${esc(t('edit'))}</button><button type="button" class="btn" data-action="close-modal">${esc(t('cancel'))}</button><button class="btn primary" type="submit">${esc(t('save'))}</button></div>
     </form>
     <div class="mt"><label>${esc(t('link'))}</label>
@@ -728,16 +1041,65 @@ function showEntityDetail(id){
     </div>`);
 }
 
-function collectEntityData(form, existing){
-  const data = Object.assign({}, existing || {});
+function renderPhaseHistory(e){
+  const history = (e.data && Array.isArray(e.data.phase_history)) ? e.data.phase_history : [];
+  if (!history.length) return '';
+  return `<div class="mt"><label>${esc(t('phase_history'))}</label><div class="kv">${history.map(h => `<div class="kv-row"><div class="kv-label">${esc(phaseLabel(h.phase))}</div><div class="kv-value">${esc(statusLabel(h.status))} · ${esc(fmtDate(h.at))}</div></div>`).join('')}</div></div>`;
+}
+
+function showLink(sourceId){
+  const source = state.entities.find(e => e.id === sourceId);
+  const others = state.entities.filter(e => e.id !== sourceId);
+  const options = list => list.length ? list.map(o => `<option value="${esc(o.id)}">${esc(kindLabel(o.kind))} · ${esc(o.title)}</option>`).join('') : `<option value="" disabled>${esc(t('no_matches'))}</option>`;
+  openModal(`<h3>${esc(t('link'))}: ${esc(source ? source.title : '')}</h3>
+    <div class="field"><label>${esc(t('search'))}</label><input id="link-search" placeholder="${esc(t('search'))}"></div>
+    <div class="field"><label>${esc(t('link_to'))}</label><select id="link-target">${options(others)}</select></div>
+    <div class="field"><label>${esc(t('label'))}</label><input id="link-label"></div>
+    <div class="modal-actions"><button type="button" class="btn" data-action="close-modal">${esc(t('cancel'))}</button><button type="button" class="btn primary" data-action="create-link-from" data-id="${esc(sourceId)}">${esc(t('link'))}</button></div>`);
+  const search = document.getElementById('link-search');
+  const select = document.getElementById('link-target');
+  search.addEventListener('input', () => {
+    const q = search.value.toLowerCase();
+    select.innerHTML = options(others.filter(o => (o.title + ' ' + o.kind).toLowerCase().includes(q)));
+  });
+}
+
+function collectEntityData(form){
+  const data = state.editingEntity ? Object.assign({}, state.editingEntity.data || {}) : {};
   const kind = form.querySelector('[name=kind]') ? form.querySelector('[name=kind]').value : (state.editingEntity ? state.editingEntity.kind : 'target');
-  (KIND_FIELDS[kind] || []).forEach(([key,label,type]) => {
+  const phase = form.querySelector('[name=phase]') ? form.querySelector('[name=phase]').value : (state.editingEntity ? state.editingEntity.phase : '');
+  const specs = [...(KIND_FIELDS[kind] || []), ...((PHASE_SCHEMAS[phase] || {}).fields || [])];
+  const seen = new Set();
+  specs.forEach(([key,label,type]) => {
+    if (seen.has(key)) return;
+    seen.add(key);
     const el = form.querySelector('[name=f_' + key + ']');
     if (!el) return;
     let v = el.value;
     if (v === ''){ delete data[key]; return; }
     if (type === 'number'){ const n = Number(v); v = isNaN(n) ? v : n; }
     data[key] = v;
+  });
+  const customKeys = new Set();
+  form.querySelectorAll('#custom-fields .custom-field-row').forEach(row => {
+    const keyEl = row.querySelector('.cf-key');
+    const valueEl = row.querySelector('.cf-value');
+    if (!keyEl || !valueEl) return;
+    const key = keyEl.value.trim();
+    if (!key) return;
+    customKeys.add(key);
+    const raw = valueEl.value;
+    let value = raw;
+    if (raw !== '' && /^[\[{]/.test(raw)) {
+      try { value = JSON.parse(raw); } catch(e){}
+    }
+    data[key] = value;
+  });
+  const phaseKeys = allPhaseKeys();
+  const kindKeys = new Set((KIND_FIELDS[kind] || []).map(([key]) => key));
+  const internalKeys = new Set(['finding_key', 'phase_history']);
+  Object.keys((state.editingEntity && state.editingEntity.data) || {}).forEach(key => {
+    if (!phaseKeys.has(key) && !kindKeys.has(key) && !customKeys.has(key) && !internalKeys.has(key)) delete data[key];
   });
   return data;
 }
@@ -881,13 +1243,43 @@ const actions = {
     </form>`),
   'close-modal': () => closeModal(),
   'open-project': el => { location.hash = '#/project/' + el.dataset.id + '/board'; },
-  'add-entity': () => showEntityForm(null),
+  'add-entity': () => {
+    const tab = state.currentTab || 'board';
+    if (tab === 'hosts') return showEntityForm(null, {kind:'target', phase:'recon'});
+    if (tab === 'services') return showEntityForm(null, {kind:'service', phase:'scan'});
+    if (tab === 'findings') return showEntityForm(null, {kind:'finding', phase:'initial_access'});
+    return showEntityForm(null);
+  },
+  'add-host': () => showEntityForm(null, {kind:'target', phase:'recon'}),
+  'add-service': () => showEntityForm(null, {kind:'service', phase:'scan'}),
+  'add-finding': () => showEntityForm(null, {kind:'finding', phase:'initial_access'}),
+  'add-entity-phase': el => showEntityForm(null, {phase: el.dataset.phase, kind: defaultKindForPhase(el.dataset.phase)}),
+  'add-custom-field': () => {
+    const wrap = document.getElementById('custom-fields');
+    if (wrap) wrap.insertAdjacentHTML('beforeend', customFieldRow('', ''));
+  },
+  'remove-custom-field': el => {
+    const row = el.closest('.custom-field-row');
+    if (row) row.remove();
+  },
   'open-entity': el => showEntityDetail(el.dataset.id),
+  'open-board-phase': el => {
+    state.boardHighlightPhase = el.dataset.phase;
+    location.hash = '#/project/' + state.project.id + '/board';
+  },
   'edit-entity': el => { const e = state.entities.find(x=>x.id===el.dataset.id); closeModal(); showEntityForm(e); },
   'delete-entity': async el => {
     if (!confirm(t('confirm_delete'))) return;
     await api('/projects/' + state.project.id + '/entities/' + el.dataset.id, {method:'DELETE'});
     closeModal(); toast(t('deleted')); await refreshCurrent();
+  },
+  'show-link': el => showLink(el.dataset.id),
+  'create-link-from': async el => {
+    const to = document.getElementById('link-target').value;
+    if (!to) return;
+    const label = document.getElementById('link-label').value;
+    await api('/projects/' + state.project.id + '/graph/edges', {method:'POST', body:{from_entity_id:el.dataset.id,to_entity_id:to,label}});
+    closeModal(); toast(t('saved')); await refreshCurrent();
   },
   'create-link': async el => {
     const from = el.dataset.id;
@@ -967,15 +1359,18 @@ document.addEventListener('submit', async ev => {
       case 'entity': {
         const kind = form.querySelector('[name=kind]').value;
         const existing = state.editingEntity || null;
-        const body = {kind, title:val('title'), phase:val('phase'), data:collectEntityData(form, existing ? existing.data : {})};
+        const body = {kind, title:val('title'), phase:val('phase'), data:collectEntityData(form)};
+        let created = null;
         if (existing){
           delete body.kind;
           body.base_version = existing.version;
           await api('/projects/' + state.project.id + '/entities/' + existing.id, {method:'PATCH', body});
         } else {
-          await api('/projects/' + state.project.id + '/entities', {method:'POST', body});
+          created = await api('/projects/' + state.project.id + '/entities', {method:'POST', body});
         }
-        closeModal(); toast(t('saved')); await refreshCurrent();
+        closeModal();
+        toast(created && created.entity && created.entity.merged ? t('finding_merged') : t('saved'));
+        await refreshCurrent();
         break;
       }
       case 'entity-detail': {

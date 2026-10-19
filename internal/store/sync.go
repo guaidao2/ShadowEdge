@@ -151,17 +151,13 @@ func applyMasterEntityUpsert(ctx context.Context, tx *sql.Tx, projectID, actorID
 		}
 	}
 
-	dataJSON, err := json.Marshal(e.Data)
-	if err != nil {
-		addSyncConflict(resp, e.ID, op.Op, "invalid entity data")
-		return nil
-	}
-
+	var err error
 	var currentVersion int
 	var deletedAt sql.NullString
+	var existingDataRaw string
 	err = tx.QueryRowContext(ctx,
-		`SELECT version, deleted_at FROM entities WHERE project_id = ? AND id = ?`,
-		projectID, e.ID).Scan(&currentVersion, &deletedAt)
+		`SELECT version, deleted_at, data FROM entities WHERE project_id = ? AND id = ?`,
+		projectID, e.ID).Scan(&currentVersion, &deletedAt, &existingDataRaw)
 	exists := err == nil
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return err
@@ -173,6 +169,25 @@ func applyMasterEntityUpsert(ctx context.Context, tx *sql.Tx, projectID, actorID
 	if exists && op.BaseVersion != nil && currentVersion != *op.BaseVersion {
 		addSyncConflict(resp, e.ID, op.Op,
 			fmt.Sprintf("version conflict: master=%d edge=%d", currentVersion, *op.BaseVersion))
+		return nil
+	}
+	if exists && e.Kind == domain.KindFinding {
+		var existingData map[string]any
+		if existingDataRaw != "" {
+			_ = json.Unmarshal([]byte(existingDataRaw), &existingData)
+		}
+		if history := mergePhaseHistory(existingData, e.Data); len(history) > 0 {
+			e.Data["phase_history"] = history
+		}
+		if _, ok := e.Data["finding_key"]; !ok {
+			if key, ok := existingData["finding_key"]; ok {
+				e.Data["finding_key"] = key
+			}
+		}
+	}
+	dataJSON, err := json.Marshal(e.Data)
+	if err != nil {
+		addSyncConflict(resp, e.ID, op.Op, "invalid entity data")
 		return nil
 	}
 

@@ -21,6 +21,12 @@ type Totals struct {
 	Credentials int `json:"credentials"`
 	Commands    int `json:"commands"`
 	Edges       int `json:"edges"`
+	Severities  []SeverityCount
+}
+
+type SeverityCount struct {
+	Label string
+	Count int
 }
 
 type Field struct {
@@ -48,21 +54,33 @@ func (d *Data) NodeTitle(id string) string {
 }
 
 var fieldLabels = map[string]string{
-	"ip": "IP", "hostname": "Hostname", "os": "OS", "tags": "Tags",
-	"target_id": "Target", "port": "Port", "protocol": "Protocol", "name": "Service",
-	"product": "Product", "version": "Version", "severity": "Severity", "cve": "CVE",
-	"cvss": "CVSS", "description": "Description", "evidence": "Evidence",
+	"ip": "IP", "hostname": "Hostname", "os": "OS", "tags": "Tags", "importance": "Importance",
+	"target_id": "Target", "service_id": "Service", "port": "Port", "protocol": "Protocol",
+	"name": "Service", "product": "Product", "version": "Version", "banner": "Banner",
+	"severity": "Severity", "cve": "CVE", "cwe": "CWE", "cvss": "CVSS", "cvss_vector": "CVSS vector",
+	"vuln_type": "Vulnerability type", "endpoint": "Endpoint", "parameter": "Parameter",
+	"payload": "Payload", "description": "Description", "impact": "Impact", "repro": "Reproduction",
+	"evidence": "Evidence", "remediation": "Remediation", "references": "References",
 	"username": "Username", "secret": "Secret", "source": "Source",
 	"filename": "Filename", "sha256": "SHA-256", "storage_path": "Storage path", "size": "Size",
 	"command": "Command", "output": "Output", "exit_code": "Exit code",
 	"assignee": "Assignee", "due_at": "Due", "done_at": "Done", "text": "Text",
+	"scope": "Scope", "contacts": "Contacts", "notes": "Notes", "scan_type": "Scan type",
+	"tool": "Tool", "ports": "Ports", "result": "Result", "vector": "Vector",
+	"implant": "Implant", "listener": "Listener", "host": "Host", "technique": "Technique",
+	"from_user": "From user", "to_user": "To user", "account": "Account",
+	"secret_type": "Secret type", "validated": "Validated", "source_host": "Source host",
+	"dest_host": "Destination host", "mechanism": "Mechanism", "location": "Location",
+	"trigger": "Trigger", "data_type": "Data type", "volume": "Volume", "channel": "Channel",
+	"destination": "Destination", "objective": "Objective", "achieved": "Achieved",
+	"summary": "Summary", "recommendations": "Recommendations", "phase_history": "Phase history",
 }
 
 var fieldOrder = map[domain.EntityKind][]string{
-	domain.KindTarget:     {"ip", "hostname", "os", "tags"},
-	domain.KindService:    {"target_id", "port", "protocol", "name", "product", "version"},
-	domain.KindFinding:    {"target_id", "severity", "cve", "cvss", "description", "evidence"},
-	domain.KindCredential: {"protocol", "username", "secret", "source"},
+	domain.KindTarget:     {"ip", "hostname", "os", "tags", "description", "importance"},
+	domain.KindService:    {"target_id", "port", "protocol", "name", "product", "version", "banner"},
+	domain.KindFinding:    {"target_id", "service_id", "vuln_type", "severity", "cve", "cwe", "cvss", "cvss_vector", "endpoint", "parameter", "payload", "description", "impact", "repro", "evidence", "remediation", "references", "tags", "phase_history"},
+	domain.KindCredential: {"target_id", "service_id", "protocol", "username", "secret", "source"},
 	domain.KindEvidence:   {"filename", "sha256", "storage_path", "size"},
 	domain.KindCommand:    {"target_id", "command", "output", "exit_code"},
 	domain.KindTask:       {"assignee", "due_at", "done_at", "text"},
@@ -94,12 +112,17 @@ func (d *Data) Fields(e domain.Entity) []Field {
 
 	fields := make([]Field, 0, len(keys))
 	for _, key := range keys {
+		if key == "finding_key" {
+			continue
+		}
 		value := e.Data[key]
 		if value == nil || fmt.Sprint(value) == "" {
 			continue
 		}
 		text := fmt.Sprint(value)
-		if key == "target_id" {
+		if key == "phase_history" {
+			text = formatPhaseHistory(value)
+		} else if key == "target_id" || key == "service_id" {
 			text = d.NodeTitle(text)
 		}
 		label := fieldLabels[key]
@@ -109,10 +132,38 @@ func (d *Data) Fields(e domain.Entity) []Field {
 		fields = append(fields, Field{
 			Label: label, Value: text,
 			Multiline: key == "command" || key == "output" || key == "description" ||
-				key == "evidence" || key == "text",
+				key == "evidence" || key == "text" || key == "payload" || key == "repro" ||
+				key == "impact" || key == "remediation" || key == "references" ||
+				key == "banner" || key == "result" || key == "summary" ||
+				key == "recommendations" || key == "notes",
 		})
 	}
 	return fields
+}
+
+func formatPhaseHistory(value any) string {
+	entries, ok := value.([]any)
+	if !ok {
+		return fmt.Sprint(value)
+	}
+	parts := make([]string, 0, len(entries))
+	for _, item := range entries {
+		entry, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		phase := fmt.Sprint(entry["phase"])
+		status := fmt.Sprint(entry["status"])
+		if phase == "" || phase == "<nil>" {
+			continue
+		}
+		if status != "" && status != "<nil>" {
+			parts = append(parts, phase+": "+status)
+		} else {
+			parts = append(parts, phase)
+		}
+	}
+	return strings.Join(parts, " → ")
 }
 
 func Build(ctx context.Context, st *store.Store, projectID, generatedBy string) (*Data, error) {
@@ -149,7 +200,45 @@ func Build(ctx context.Context, st *store.Store, projectID, generatedBy string) 
 		}
 	}
 	d.Totals.Edges = len(graph.Edges)
+	d.Totals.Severities = severityTotals(graph.Nodes)
 	return d, nil
+}
+
+func severityTotals(nodes []domain.Entity) []SeverityCount {
+	order := []string{"critical", "high", "medium", "low", "info", "unclassified"}
+	labels := map[string]string{
+		"critical": "Critical", "high": "High", "medium": "Medium",
+		"low": "Low", "info": "Info", "unclassified": "Unclassified",
+	}
+	counts := map[string]int{}
+	for _, n := range nodes {
+		if n.Kind != domain.KindFinding {
+			continue
+		}
+		severity, _ := n.Data["severity"].(string)
+		severity = strings.ToLower(strings.TrimSpace(severity))
+		if severity == "" {
+			severity = "unclassified"
+		}
+		counts[severity]++
+	}
+	out := make([]SeverityCount, 0, len(order))
+	known := map[string]bool{}
+	for _, severity := range order {
+		known[severity] = true
+		out = append(out, SeverityCount{Label: labels[severity], Count: counts[severity]})
+	}
+	var extras []string
+	for severity := range counts {
+		if !known[severity] {
+			extras = append(extras, severity)
+		}
+	}
+	sort.Strings(extras)
+	for _, severity := range extras {
+		out = append(out, SeverityCount{Label: severity, Count: counts[severity]})
+	}
+	return out
 }
 
 var reportTemplate = template.Must(template.New("report").Parse(`<!DOCTYPE html>
@@ -186,6 +275,12 @@ code{font-size:11px;word-break:break-word}
 <tr><th>Credentials</th><td>{{.Totals.Credentials}}</td></tr>
 <tr><th>Commands</th><td>{{.Totals.Commands}}</td></tr>
 <tr><th>DAG links</th><td>{{.Totals.Edges}}</td></tr>
+</table>
+
+<h3>Findings by severity</h3>
+<table>
+<tr><th>Severity</th><th>Count</th></tr>
+{{range .Totals.Severities}}<tr><td>{{.Label}}</td><td>{{.Count}}</td></tr>{{end}}
 </table>
 
 <h2>Phase coverage</h2>
@@ -230,6 +325,11 @@ func Markdown(data *Data) string {
 	fmt.Fprintf(&b, "| Credentials | %d |\n", data.Totals.Credentials)
 	fmt.Fprintf(&b, "| Commands | %d |\n", data.Totals.Commands)
 	fmt.Fprintf(&b, "| DAG links | %d |\n\n", data.Totals.Edges)
+	b.WriteString("### Findings by severity\n\n| Severity | Count |\n|---|---|\n")
+	for _, severity := range data.Totals.Severities {
+		fmt.Fprintf(&b, "| %s | %d |\n", md(severity.Label), severity.Count)
+	}
+	b.WriteString("\n")
 
 	b.WriteString("## Phase coverage\n\n")
 	for _, col := range data.Columns {
@@ -241,7 +341,15 @@ func Markdown(data *Data) string {
 		for _, e := range col.Entities {
 			fmt.Fprintf(&b, "- **%s** — %s / %s\n", md(e.Title), e.Kind, e.Status)
 			for _, f := range data.Fields(e) {
-				fmt.Fprintf(&b, "  - **%s:** %s\n", md(f.Label), md(f.Value))
+				if f.Multiline {
+					fmt.Fprintf(&b, "  - **%s:**\n\n", md(f.Label))
+					for _, line := range strings.Split(f.Value, "\n") {
+						fmt.Fprintf(&b, "        %s\n", line)
+					}
+					b.WriteString("\n")
+				} else {
+					fmt.Fprintf(&b, "  - **%s:** %s\n", md(f.Label), md(f.Value))
+				}
 			}
 		}
 		b.WriteString("\n")

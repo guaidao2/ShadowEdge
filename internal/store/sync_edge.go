@@ -452,21 +452,37 @@ func applyEntityFromSyncTx(ctx context.Context, tx *sql.Tx, localProjectID, loca
 		}
 	}
 
-	dataJSON, err := json.Marshal(e.Data)
-	if err != nil {
-		return err
-	}
 	version := e.Version
 	if version <= 0 {
 		version = 1
 	}
 
+	var err error
 	var existingVersion int
+	var existingDataRaw string
 	err = tx.QueryRowContext(ctx,
-		`SELECT version FROM entities WHERE project_id = ? AND id = ?`,
-		localProjectID, e.ID).Scan(&existingVersion)
+		`SELECT version, data FROM entities WHERE project_id = ? AND id = ?`,
+		localProjectID, e.ID).Scan(&existingVersion, &existingDataRaw)
 	exists := err == nil
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+	if exists && e.Kind == domain.KindFinding {
+		var existingData map[string]any
+		if existingDataRaw != "" {
+			_ = json.Unmarshal([]byte(existingDataRaw), &existingData)
+		}
+		if history := mergePhaseHistory(existingData, e.Data); len(history) > 0 {
+			e.Data["phase_history"] = history
+		}
+		if _, ok := e.Data["finding_key"]; !ok {
+			if key, ok := existingData["finding_key"]; ok {
+				e.Data["finding_key"] = key
+			}
+		}
+	}
+	dataJSON, err := json.Marshal(e.Data)
+	if err != nil {
 		return err
 	}
 	ts := now()

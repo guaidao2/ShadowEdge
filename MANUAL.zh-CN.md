@@ -100,23 +100,56 @@ $env:SHADOWEDGE_ADMIN_PASSWORD = "ChangeMe-Str0ng!"
 10. Objective / Impact（目标达成）
 11. Reporting（报告）
 
-点击 **Add entity** 添加条目，选择类型、阶段、标题和该类型对应的字段。
+### 资产中心
+
+项目工作区还提供 **Hosts**、**Services**、**Findings** 三个视图。主机保存
+IP/主机名/OS/重要性；服务关联主机并保存端口/协议/产品/版本/Banner；漏洞关联
+主机或服务，保存完整的漏洞记录。DAG 使用同一套节点，因此可以把资产和漏洞串成
+攻击路径。
+
+点击 **Add entity** 添加条目，选择类型、阶段、标题和该类型对应的字段。每个
+阶段列还带有 **+** 按钮：它会预选该阶段，并显示该阶段的专用字段。服务、漏洞、
+命令可以不填目标，目标选择器是可选的。
 
 ### 实体类型与字段
 
 | 类型 | 字段 |
 |---|---|
-| `target` | IP/主机名、hostname、OS、tags |
-| `service` | target、port、protocol、服务名、product、version |
-| `finding` | target、severity、CVE、CVSS、description、evidence |
-| `credential` | protocol、username、secret、source |
+| `target` | IP/主机名、hostname、OS、tags、description、importance |
+| `service` | target（可选）、port、protocol、服务名、product、version、banner |
+| `finding` | target/service、漏洞类型、severity、CVE、CWE、CVSS/向量、endpoint、parameter、Payload、description、impact、复现步骤、evidence、修复建议、参考链接、tags |
+| `credential` | target/service（可选）、protocol、username、secret、source |
 | `evidence` | filename、SHA-256、storage path、size |
-| `command` | target、command、output、exit code |
+| `command` | target（可选）、command、output、exit code |
 | `task` | assignee、text |
 | `note` | text |
 | `action` | text |
 
 状态：`new`、`confirmed`、`exploited`、`fixed`、`false_positive`。
+
+表中字段是内置快捷项。每种实体都可以追加任意自定义字段；字段保存在实体 JSON 中，并在详情弹窗和报告中展示。
+
+### 阶段专用字段
+
+| 阶段 | 默认实体 | 专用字段 |
+|---|---|---|
+| Reconnaissance（侦察） | target | scope、source、contacts、notes |
+| Scanning & Enumeration（扫描与枚举） | service | scan type、tool、ports、banner、result |
+| Initial Access（初始访问） | finding | vector、endpoint、parameter、payload、result |
+| Foothold / C2（立足点） | action | implant、listener、host、result |
+| Privilege Escalation（提权） | finding | technique、from user、to user、result |
+| Credential Access（凭据获取） | credential | account、secret type、validated、source |
+| Lateral Movement（横向移动） | action | source host、destination host、protocol、technique、result |
+| Persistence（持久化） | action | mechanism、location、trigger、result |
+| Collection & Exfiltration（收集与外传） | evidence | data type、volume、channel、destination、result |
+| Objective / Impact（目标达成） | note | objective、impact、achieved、result |
+| Reporting（报告） | note | summary、recommendations、references |
+
+部分阶段字段也会出现在实体类型字段中；表单会去重，只显示一次。
+
+### 漏洞生命周期
+
+漏洞是资产级记录。身份由主机/服务 + CVE 决定；没有 CVE 时由主机/服务 + 类型 + 标题 + 端点 + 参数决定。同一漏洞在另一个阶段再次录入会合并到同一条记录，并追加阶段历史。作战板显示当前阶段，详情弹窗显示完整生命周期。存在依赖漏洞的主机或服务不能直接删除，需要先处理这些记录。
 
 实体列表和详情弹窗会以带标签的字段展示；只有需要原始数据时才展开 **Advanced JSON**。
 

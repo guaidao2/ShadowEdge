@@ -119,8 +119,53 @@ func (s *Store) CreateEntity(ctx context.Context, projectID, actorID string, in 
 		if err := validatePhaseTx(ctx, tx, projectID, in.Phase); err != nil {
 			return err
 		}
-		id := newID()
+		if in.Kind != domain.KindTarget {
+			if err := validateRelationsTx(ctx, tx, projectID, in.Kind, in.Data); err != nil {
+				return err
+			}
+		}
 		ts := now()
+		id := newID()
+		if in.Kind == domain.KindFinding {
+			key := findingKey(projectID, in.Title, in.Data)
+			var existingID string
+			err := tx.QueryRowContext(ctx, `
+				SELECT id FROM entities
+				WHERE project_id = ? AND kind = 'finding' AND deleted_at IS NULL
+				  AND json_extract(data, '$.finding_key') = ?
+				LIMIT 1`, projectID, key).Scan(&existingID)
+			if err == nil {
+				merged, mergeErr := s.mergeFindingTx(ctx, tx, projectID, actorID, existingID, in, key)
+				if mergeErr != nil {
+					return mergeErr
+				}
+				out = merged
+				return nil
+			}
+			if !errors.Is(err, sql.ErrNoRows) {
+				return err
+			}
+			id = findingID(key)
+			var existingByID string
+			var deletedAt sql.NullString
+			checkErr := tx.QueryRowContext(ctx,
+				`SELECT id, deleted_at FROM entities WHERE project_id = ? AND id = ?`,
+				projectID, id).Scan(&existingByID, &deletedAt)
+			if checkErr == nil {
+				merged, mergeErr := s.mergeFindingTx(ctx, tx, projectID, actorID, existingByID, in, key)
+				if mergeErr != nil {
+					return mergeErr
+				}
+				out = merged
+				return nil
+			}
+			if !errors.Is(checkErr, sql.ErrNoRows) {
+				return checkErr
+			}
+			delete(in.Data, "phase_history")
+			in.Data["finding_key"] = key
+			appendPhaseHistory(in.Data, in.Phase, in.Status, actorID, ts)
+		}
 		dataJSON, err := json.Marshal(in.Data)
 		if err != nil {
 			return fmt.Errorf("%w: data is not valid JSON", ErrValidation)
@@ -272,12 +317,51 @@ func (s *Store) UpdateEntity(ctx context.Context, projectID, id, actorID string,
 		if err := validatePhaseTx(ctx, tx, projectID, phase); err != nil {
 			return err
 		}
+		ts := now()
+		oldTarget, _ := current.Data["target_id"].(string)
+		oldService, _ := current.Data["service_id"].(string)
+		newTarget, _ := data["target_id"].(string)
+		newService, _ := data["service_id"].(string)
+		relationsChanged := strings.TrimSpace(oldTarget) != strings.TrimSpace(newTarget) ||
+			strings.TrimSpace(oldService) != strings.TrimSpace(newService)
+		if current.Kind != domain.KindTarget && relationsChanged {
+			if err := validateRelationsTx(ctx, tx, projectID, current.Kind, data); err != nil {
+				return err
+			}
+		}
+		if current.Kind == domain.KindFinding {
+			existingKey, _ := current.Data["finding_key"].(string)
+			if history, ok := current.Data["phase_history"]; ok {
+				data["phase_history"] = history
+			} else {
+				delete(data, "phase_history")
+			}
+			key := findingKey(projectID, title, data)
+			if existingKey != "" && key != existingKey {
+				var count int
+				if err := tx.QueryRowContext(ctx, `
+					SELECT COUNT(*) FROM entities
+					WHERE project_id = ? AND kind = 'finding' AND deleted_at IS NULL
+					  AND id <> ? AND json_extract(data, '$.finding_key') = ?`,
+					projectID, id, key).Scan(&count); err != nil {
+					return err
+				}
+				if count > 0 {
+					return fmt.Errorf("%w: finding already exists for this asset and identity", ErrConflict)
+				}
+			}
+			data["finding_key"] = key
+			if phase != current.Phase || status != current.Status {
+				appendPhaseHistory(data, phase, status, actorID, ts)
+			} else if _, ok := data["phase_history"]; !ok {
+				appendPhaseHistory(data, phase, status, actorID, ts)
+			}
+		}
 
 		dataJSON, err := json.Marshal(data)
 		if err != nil {
 			return fmt.Errorf("%w: data is not valid JSON", ErrValidation)
 		}
-		ts := now()
 		if _, err := tx.ExecContext(ctx, `
 			UPDATE entities
 			SET title = ?, status = ?, phase = ?, data = ?, version = version + 1,
@@ -323,15 +407,47 @@ func (s *Store) UpdateEntity(ctx context.Context, projectID, id, actorID string,
 
 func (s *Store) DeleteEntity(ctx context.Context, projectID, id, actorID string) error {
 	return s.withWrite(ctx, func(tx *sql.Tx) error {
+		var kind domain.EntityKind
 		var version int
 		err := tx.QueryRowContext(ctx,
-			`SELECT version FROM entities WHERE project_id = ? AND id = ? AND deleted_at IS NULL`,
-			projectID, id).Scan(&version)
+			`SELECT kind, version FROM entities WHERE project_id = ? AND id = ? AND deleted_at IS NULL`,
+			projectID, id).Scan(&kind, &version)
 		if errors.Is(err, sql.ErrNoRows) {
 			return ErrNotFound
 		}
 		if err != nil {
 			return err
+		}
+		if kind == domain.KindTarget {
+			var deps int
+			if err := tx.QueryRowContext(ctx, `
+				SELECT COUNT(*) FROM entities
+				WHERE project_id = ? AND deleted_at IS NULL AND id <> ?
+				  AND (json_extract(data, '$.target_id') = ?
+				       OR json_extract(data, '$.service_id') IN (
+				           SELECT id FROM entities
+				           WHERE project_id = ? AND kind = 'service' AND deleted_at IS NULL
+				             AND json_extract(data, '$.target_id') = ?
+				       ))`,
+				projectID, id, id, projectID, id).Scan(&deps); err != nil {
+				return err
+			}
+			if deps > 0 {
+				return fmt.Errorf("%w: target has dependent services or findings", ErrConflict)
+			}
+		}
+		if kind == domain.KindService {
+			var deps int
+			if err := tx.QueryRowContext(ctx, `
+				SELECT COUNT(*) FROM entities
+				WHERE project_id = ? AND deleted_at IS NULL AND id <> ?
+				  AND json_extract(data, '$.service_id') = ?`,
+				projectID, id, id).Scan(&deps); err != nil {
+				return err
+			}
+			if deps > 0 {
+				return fmt.Errorf("%w: service has dependent findings or records", ErrConflict)
+			}
 		}
 		ts := now()
 		res, err := tx.ExecContext(ctx, `

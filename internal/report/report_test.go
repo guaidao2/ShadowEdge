@@ -59,3 +59,79 @@ func TestHumanReadableFieldsAndReports(t *testing.T) {
 		t.Fatal("Markdown leaked raw JSON instead of rendered fields")
 	}
 }
+
+func TestFieldsResolveServiceAndKeepMultiline(t *testing.T) {
+	d := &Data{nodeTitles: map[string]string{"svc-1": "80/tcp http"}}
+	e := domain.Entity{
+		Kind: domain.KindFinding,
+		Data: map[string]any{
+			"service_id": "svc-1",
+			"vuln_type":  "SQL Injection",
+			"payload":    "id=1'\nUNION SELECT",
+			"repro":      "1. login\n2. inject",
+			"phase_history": []any{
+				map[string]any{"phase": "scan", "status": "new"},
+				map[string]any{"phase": "initial_access", "status": "confirmed"},
+			},
+		},
+	}
+	fields := d.Fields(e)
+	byLabel := map[string]Field{}
+	for _, field := range fields {
+		byLabel[field.Label] = field
+	}
+	if _, ok := byLabel["Phase history"]; !ok {
+		t.Fatalf("phase history field missing: %+v", fields)
+	}
+	if got := byLabel["Phase history"].Value; got != "scan: new → initial_access: confirmed" {
+		t.Fatalf("phase history = %q", got)
+	}
+	service, ok := byLabel["Service"]
+	if !ok || service.Value != "80/tcp http" {
+		t.Fatalf("service_id not resolved: %+v", service)
+	}
+	payload, ok := byLabel["Payload"]
+	if !ok || !payload.Multiline {
+		t.Fatalf("payload should be multiline: %+v", payload)
+	}
+	repro, ok := byLabel["Reproduction"]
+	if !ok || !repro.Multiline {
+		t.Fatalf("repro should be multiline: %+v", repro)
+	}
+	data := &Data{
+		Project:    domain.Project{Name: "Demo"},
+		Columns:    []domain.BoardColumn{{Phase: domain.DefaultPhases[0], Entities: []domain.Entity{e}}},
+		Graph:      &domain.Graph{Nodes: []domain.Entity{e}},
+		nodeTitles: map[string]string{"svc-1": "80/tcp http"},
+	}
+	markdown := Markdown(data)
+	if !strings.Contains(markdown, "        UNION SELECT") {
+		t.Fatalf("Markdown flattened multiline payload:\n%s", markdown)
+	}
+}
+
+func TestSeverityTotals(t *testing.T) {
+	got := severityTotals([]domain.Entity{
+		{Kind: domain.KindFinding, Data: map[string]any{"severity": "high"}},
+		{Kind: domain.KindFinding, Data: map[string]any{"severity": "High"}},
+		{Kind: domain.KindFinding, Data: map[string]any{"severity": "low"}},
+		{Kind: domain.KindFinding, Data: map[string]any{"severity": "bogus"}},
+		{Kind: domain.KindFinding, Data: map[string]any{}},
+		{Kind: domain.KindTarget, Data: map[string]any{}},
+	})
+	byLabel := map[string]int{}
+	total := 0
+	for _, count := range got {
+		byLabel[count.Label] = count.Count
+		total += count.Count
+	}
+	if byLabel["High"] != 2 || byLabel["Low"] != 1 || byLabel["Unclassified"] != 1 || byLabel["bogus"] != 1 {
+		t.Fatalf("severity totals = %+v", got)
+	}
+	if total != 5 {
+		t.Fatalf("severity total = %d, want 5", total)
+	}
+	if byLabel["Critical"] != 0 {
+		t.Fatalf("critical should be zero: %+v", got)
+	}
+}

@@ -157,6 +157,12 @@ func (s *Store) withWrite(ctx context.Context, fn func(*sql.Tx) error) error {
 
 func newID() string { return uuid.NewString() }
 
+// findingID makes a finding's ID deterministic from its asset-scoped identity,
+// so the same finding captured on master and edge converges to one node.
+func findingID(key string) string {
+	return uuid.NewSHA1(uuid.NameSpaceURL, []byte("shadowedge/finding/"+key)).String()
+}
+
 func now() string { return time.Now().UTC().Format(time.RFC3339Nano) }
 
 func scanNullableString(v sql.NullString) string {

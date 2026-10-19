@@ -185,6 +185,7 @@ type Entity struct {
 	UpdatedBy string         `json:"updated_by"`
 	CreatedAt string         `json:"created_at"`
 	UpdatedAt string         `json:"updated_at"`
+	Merged    bool           `json:"merged,omitempty"`
 }
 
 type Edge struct {

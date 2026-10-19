@@ -14,18 +14,23 @@ scattered notes and chat threads.
 ### Workspace
 
 - Projects with owner, operator, viewer and auditor roles
-- Typed entities: target, service, finding, credential, evidence, command, task, note and action
+- Typed entities: target, service, finding, credential, evidence, command, task, note and action; built-in fields are shortcuts, and every entity can add arbitrary custom fields
+- Asset center: Hosts, Services and Findings views with host/service relationships
+- Structured vulnerability fields: type, severity, CVE/CWE, CVSS/vector, endpoint, parameter, payload, impact, reproduction, evidence, remediation, references and custom fields
+- Findings are asset-scoped lifecycle records; capturing the same finding in another phase merges it and appends phase history
 - Human-readable cards, tables and detail views; raw payloads stay behind `Advanced JSON`
 
 ### Penetration phase board
 
 - 11 standard phases from reconnaissance to reporting
 - Entities grouped by phase with type and status badges
+- Each phase column opens a phase-specific entry form with its own default entity type and fields
 - Status: new, confirmed, exploited, fixed, false positive
 
 ### Attack graph
 
 - Manual DAG links between project entities
+- Uses the same host/service/finding nodes, so assets and findings can be chained into attack paths
 - Node colors by entity type and labeled edges
 - Interactive graph with zoom, drag and click-through to entity details
 
